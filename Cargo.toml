@@ -10,5 +10,6 @@ glam = { version = "0.30.9", features = ["bytemuck"] }
 wgpu = "27.0.1"
 
 [dev-dependencies]
+fastrand = "2.3.0"
 pollster = "0.4.0"
 winit = "0.30.12"
