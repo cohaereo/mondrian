@@ -2,7 +2,7 @@ const SHAPE_TYPE_SPHERE: u32 = 0;
 const SHAPE_TYPE_TRIANGLE: u32 = 1;
 const SHAPE_TYPE_BOX: u32 = 2;
 const SHAPE_TYPE_SEGMENT: u32 = 3;
-const SHAPE_TYPE_SECTOR: u32 = 4;
+const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 
@@ -78,7 +78,7 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
             let b = vec2<f32>(shape.params[2], shape.params[3]);
             return sd_segment(p, a, b);
         }
-        case SHAPE_TYPE_SECTOR: {
+        case SHAPE_TYPE_CIRCLE_SECTOR: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
             let radius_inner = shape.params[2];
             let radius_outer = shape.params[3];

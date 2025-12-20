@@ -37,7 +37,7 @@ pub enum Primitive {
         p1: Vec2,
         p2: Vec2,
     },
-    Sector {
+    CircleSector {
         center: Vec2,
         radius_inner: f32,
         radius_outer: f32,
@@ -72,7 +72,7 @@ impl Primitive {
                 let max = p1.max(p2);
                 BoundingBox { min, max }
             }
-            Primitive::Sector {
+            Primitive::CircleSector {
                 center,
                 radius_outer,
                 ..

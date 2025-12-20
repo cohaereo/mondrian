@@ -57,7 +57,7 @@ impl ExampleApp {
 
         let pulsate = (time * 3.0).sin() * 0.5 + 0.5;
         let angle = (time.fract() * 360.0).to_radians();
-        self.painter.add_sector(
+        self.painter.add_circle_sector(
             [300.0, 100.0],
             25.0 + pulsate * 5.0,
             50.0 - pulsate * 5.0,

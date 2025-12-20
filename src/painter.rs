@@ -96,7 +96,7 @@ impl Painter {
         self.add_primitive(Primitive::Triangle { p1, p2, p3 }, color, 0.0);
     }
 
-    pub fn add_sector(
+    pub fn add_circle_sector(
         &mut self,
         center: impl Into<Vec2>,
         radius_inner: impl Into<f32>,
@@ -112,7 +112,7 @@ impl Painter {
         let angle_end = angle_end.into();
         let color = color.into();
         self.add_primitive(
-            Primitive::Sector {
+            Primitive::CircleSector {
                 center,
                 radius_inner,
                 radius_outer,
