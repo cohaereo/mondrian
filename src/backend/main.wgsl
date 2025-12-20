@@ -9,7 +9,8 @@ const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 struct Shape {
     shape_type: u32,
     distance_offset: f32,
-    _padding: vec2<f32>,
+    line_width: f32,
+    _padding: f32,
     color: vec4<f32>,
 
     params: array<f32, 8>,
@@ -43,6 +44,9 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
         var dist = sd_shape(frag_pos, shape);
 
         dist += shape.distance_offset;
+        if(shape.line_width > 0.0) {
+            dist = sd_outline(dist, shape.line_width / 2.0);
+        }
         color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
     }
 
@@ -100,15 +104,18 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
     }
 }
 
+fn sd_union(d1: f32, d2: f32) -> f32 {
+    return min(d1, d2);
+}
+
+fn sd_outline(d: f32, thickness: f32) -> f32 {
+    return abs(d) - thickness;
+}
+
 // SDF functions (https://iquilezles.org/articles/distfunctions2d/)
 fn sd_circle(p: vec2<f32>, radius: f32) -> f32 {
     return length(p) - radius;
 }
-
-// fn sd_box(p: vec2<f32>, b: vec2<f32>) -> f32 {
-//     let d = abs(p) - b;
-//     return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
-// }
 
 fn sd_rounded_rect(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
     var radii = vec2<f32>(0.0, 0.0);

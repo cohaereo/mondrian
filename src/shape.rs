@@ -7,6 +7,9 @@ pub struct Shape {
     /// A value added to the distance field before rendering. Negative values
     /// will make the shape appear larger, positive values will make it appear smaller.
     pub distance_offset: f32,
+    /// When non-zero, indicates that the shape should be rendered as a line
+    /// with the given width instead of a filled shape.
+    pub line_width: f32,
 }
 
 impl Shape {

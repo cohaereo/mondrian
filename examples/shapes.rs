@@ -38,26 +38,40 @@ impl ExampleApp {
         };
 
         self.painter
-            .add_circle([100.0, 100.0], 50.0, [1.0, 0.0, 0.0, 1.0]);
+            .add_filled_circle([100.0, 100.0], 50.0, [1.0, 0.0, 0.0, 1.0]);
         self.painter
-            .add_circle([200.0, 100.0], 50.0, [0.0, 0.0, 1.0, 1.0]);
+            .add_filled_circle([200.0, 100.0], 50.0, [0.0, 0.0, 1.0, 1.0]);
 
         self.painter
-            .add_rect([150.0, 200.0], [100.0, 50.0], 0.0, [0.0, 1.0, 0.0, 1.0]);
+            .add_filled_rect([150.0, 200.0], [100.0, 50.0], 0.0, [0.0, 1.0, 0.0, 1.0]);
 
-        self.painter.add_rect(
+        self.painter.add_filled_rect(
             [150.0, 300.0],
             [100.0, 50.0],
             [32.0, 4.0, 32.0, 32.0],
             [1.0, 0.0, 1.0, 1.0],
         );
 
+        self.painter.add_rect(
+            [450.0, 220.0],
+            [50.0, 50.0],
+            8.0,
+            [1.0, 1.0, 0.0, 1.0],
+            16.0,
+        );
+
         self.painter
-            .add_line([400.0, 300.0], [500.0, 400.0], 8.0, [0.0, 0.0, 1.0, 1.0]);
+            .add_rect([570.0, 220.0], [50.0, 50.0], 8.0, [1.0, 1.0, 0.0, 1.0], 4.0);
+
+        self.painter
+            .add_rect([680.0, 220.0], [50.0, 50.0], 8.0, [1.0, 1.0, 0.0, 1.0], 1.0);
+
+        self.painter
+            .add_filled_line([400.0, 300.0], [500.0, 400.0], 8.0, [0.0, 0.0, 1.0, 1.0]);
 
         let pulsate = (time * 3.0).sin() * 0.5 + 0.5;
         let angle = (time.fract() * 360.0).to_radians();
-        self.painter.add_circle_sector(
+        self.painter.add_filled_circle_sector(
             [300.0, 100.0],
             25.0 + pulsate * 5.0,
             50.0 - pulsate * 5.0,
@@ -65,8 +79,17 @@ impl ExampleApp {
             (angle + pulsate * 0.4 + std::f32::consts::PI / 2.0) % TAU,
             [1.0, 1.0, 1.0, 1.0],
         );
+        self.painter.add_circle_sector(
+            [300.0, 200.0],
+            25.0 + pulsate * 5.0,
+            50.0 - pulsate * 5.0,
+            angle,
+            (angle + pulsate * 0.4 + std::f32::consts::PI / 2.0) % TAU,
+            [1.0, 1.0, 1.0, 1.0],
+            1.0,
+        );
 
-        self.painter.add_polyquad(
+        self.painter.add_filled_polyquad(
             [380.0, 50.0],
             [420.0, 50.0],
             [450.0, 150.0],
@@ -82,28 +105,28 @@ impl ExampleApp {
         let top_right = vec2(bottom_right.x, top_left.y);
         let bottom_left = vec2(top_left.x, bottom_right.y);
 
-        self.painter.add_triangle(
+        self.painter.add_filled_triangle(
             top_left,
             top_left + vec2(32.0, 0.0),
             top_left + vec2(0.0, 32.0),
             [1.0, 0.0, 0.0, 1.0],
         );
 
-        self.painter.add_triangle(
+        self.painter.add_filled_triangle(
             top_right,
             top_right + vec2(-32.0, 0.0),
             top_right + vec2(0.0, 32.0),
             [0.0, 1.0, 0.0, 1.0],
         );
 
-        self.painter.add_triangle(
+        self.painter.add_filled_triangle(
             bottom_left,
             bottom_left + vec2(32.0, 0.0),
             bottom_left + vec2(0.0, -32.0),
             [0.0, 0.0, 1.0, 1.0],
         );
 
-        self.painter.add_triangle(
+        self.painter.add_filled_triangle(
             bottom_right,
             bottom_right + vec2(-32.0, 0.0),
             bottom_right + vec2(0.0, -32.0),
