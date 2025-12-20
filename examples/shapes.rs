@@ -53,7 +53,7 @@ impl ExampleApp {
         );
 
         self.painter
-            .add_segment([400.0, 300.0], [500.0, 400.0], 8.0, [0.0, 0.0, 1.0, 1.0]);
+            .add_line([400.0, 300.0], [500.0, 400.0], 8.0, [0.0, 0.0, 1.0, 1.0]);
 
         let pulsate = (time * 3.0).sin() * 0.5 + 0.5;
         let angle = (time.fract() * 360.0).to_radians();

@@ -69,7 +69,7 @@ impl Painter {
         );
     }
 
-    pub fn add_segment(
+    pub fn add_line(
         &mut self,
         p1: impl Into<Vec2>,
         p2: impl Into<Vec2>,
@@ -79,7 +79,7 @@ impl Painter {
         let p1 = p1.into();
         let p2 = p2.into();
         let color = color.into();
-        self.add_primitive(Primitive::Segment { p1, p2 }, color, -radius);
+        self.add_primitive(Primitive::Line { p1, p2 }, color, -radius);
     }
 
     pub fn add_triangle(

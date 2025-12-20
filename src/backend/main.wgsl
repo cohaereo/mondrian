@@ -1,7 +1,7 @@
 const SHAPE_TYPE_SPHERE: u32 = 0;
 const SHAPE_TYPE_TRIANGLE: u32 = 1;
 const SHAPE_TYPE_BOX: u32 = 2;
-const SHAPE_TYPE_SEGMENT: u32 = 3;
+const SHAPE_TYPE_LINE: u32 = 3;
 const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
@@ -73,10 +73,10 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
             );
             return sd_rounded_box(p - pos, extents, corner_radii);
         }
-        case SHAPE_TYPE_SEGMENT: {
+        case SHAPE_TYPE_LINE: {
             let a = vec2<f32>(shape.params[0], shape.params[1]);
             let b = vec2<f32>(shape.params[2], shape.params[3]);
-            return sd_segment(p, a, b);
+            return sd_line(p, a, b);
         }
         case SHAPE_TYPE_CIRCLE_SECTOR: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
@@ -129,7 +129,7 @@ fn sd_rounded_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
     return min(max(q.x,q.y),0.0) + length(max(q, vec2(0.0, 0.0))) - radii.x;
 }
 
-fn sd_segment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+fn sd_line(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let pa = p - a;
     let ba = b - a;
     let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);

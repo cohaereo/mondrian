@@ -33,7 +33,7 @@ pub enum Primitive {
         extents: Vec2,
         corner_radius: CornerRadius,
     },
-    Segment {
+    Line {
         p1: Vec2,
         p2: Vec2,
     },
@@ -67,7 +67,7 @@ impl Primitive {
                 min: center - extents * 0.5,
                 max: center + extents * 0.5,
             },
-            Primitive::Segment { p1, p2 } => {
+            Primitive::Line { p1, p2 } => {
                 let min = p1.min(p2);
                 let max = p1.max(p2);
                 BoundingBox { min, max }

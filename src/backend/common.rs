@@ -23,7 +23,7 @@ impl From<&crate::Shape> for GpuShape {
             Primitive::Circle { .. } => 0,
             Primitive::Triangle { .. } => 1,
             Primitive::Box { .. } => 2,
-            Primitive::Segment { .. } => 3,
+            Primitive::Line { .. } => 3,
             Primitive::CircleSector { .. } => 4,
             Primitive::PolyQuad { .. } => 5,
         };
@@ -64,7 +64,7 @@ impl From<&Primitive> for GpuShapeParams {
                 corner_radius.bottom_left,
             ]
             .into(),
-            Primitive::Segment { p1, p2 } => [p1.x, p1.y, p2.x, p2.y].into(),
+            Primitive::Line { p1, p2 } => [p1.x, p1.y, p2.x, p2.y].into(),
             Primitive::CircleSector {
                 center,
                 radius_inner,
