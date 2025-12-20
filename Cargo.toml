@@ -1,0 +1,14 @@
+[package]
+name = "mondrian"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+assert-offset = "0.1.2"
+bytemuck = { version = "1.24.0", features = ["derive"] }
+glam = { version = "0.30.9", features = ["bytemuck"] }
+wgpu = "27.0.1"
+
+[dev-dependencies]
+pollster = "0.4.0"
+winit = "0.30.12"
