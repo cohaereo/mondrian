@@ -75,6 +75,57 @@ impl Painter {
 
     pub fn add_rect(
         &mut self,
+        min: impl Into<Vec2>,
+        max: impl Into<Vec2>,
+        corner_radius: impl Into<CornerRadius>,
+        color: impl Into<Vec4>,
+        line_width: f32,
+    ) -> &mut Shape {
+        let min = min.into();
+        let max = max.into();
+        let center = (min + max) * 0.5;
+        let extents = max - min;
+        let corner_radius = corner_radius.into();
+        let color = color.into();
+        let shape = self.add_primitive(
+            Primitive::Rect {
+                center,
+                extents,
+                corner_radius,
+            },
+            color,
+            0.0,
+        );
+        shape.line_width = line_width;
+        shape
+    }
+
+    pub fn add_filled_rect(
+        &mut self,
+        min: impl Into<Vec2>,
+        max: impl Into<Vec2>,
+        corner_radius: impl Into<CornerRadius>,
+        color: impl Into<Vec4>,
+    ) -> &mut Shape {
+        let min = min.into();
+        let max = max.into();
+        let center = (min + max) * 0.5;
+        let extents = max - min;
+        let corner_radius = corner_radius.into();
+        let color = color.into();
+        self.add_primitive(
+            Primitive::Rect {
+                center,
+                extents,
+                corner_radius,
+            },
+            color,
+            0.0,
+        )
+    }
+
+    pub fn add_rect_center_size(
+        &mut self,
         center: impl Into<Vec2>,
         extents: impl Into<Vec2>,
         corner_radius: impl Into<CornerRadius>,
@@ -98,7 +149,7 @@ impl Painter {
         shape
     }
 
-    pub fn add_filled_rect(
+    pub fn add_filled_rect_center_size(
         &mut self,
         center: impl Into<Vec2>,
         extents: impl Into<Vec2>,

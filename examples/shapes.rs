@@ -37,22 +37,36 @@ impl ExampleApp {
             None => return,
         };
 
+        self.painter.add_filled_rect(
+            [0.0, 0.0],
+            [
+                device.surface_config.width as f32,
+                device.surface_config.height as f32,
+            ],
+            0.0,
+            [0.01, 0.01, 0.02, 1.0],
+        );
+
         self.painter
             .add_filled_circle([100.0, 100.0], 50.0, [1.0, 0.0, 0.0, 1.0]);
         self.painter
             .add_filled_circle([200.0, 100.0], 50.0, [0.0, 0.0, 1.0, 1.0]);
 
-        self.painter
-            .add_filled_rect([150.0, 200.0], [100.0, 50.0], 0.0, [0.0, 1.0, 0.0, 1.0]);
+        self.painter.add_filled_rect_center_size(
+            [150.0, 200.0],
+            [100.0, 50.0],
+            0.0,
+            [0.0, 1.0, 0.0, 1.0],
+        );
 
-        self.painter.add_filled_rect(
+        self.painter.add_filled_rect_center_size(
             [150.0, 300.0],
             [100.0, 50.0],
             [32.0, 4.0, 32.0, 32.0],
             [1.0, 0.0, 1.0, 1.0],
         );
 
-        self.painter.add_rect(
+        self.painter.add_rect_center_size(
             [450.0, 220.0],
             [50.0, 50.0],
             8.0,
@@ -60,11 +74,21 @@ impl ExampleApp {
             16.0,
         );
 
-        self.painter
-            .add_rect([570.0, 220.0], [50.0, 50.0], 8.0, [1.0, 1.0, 0.0, 1.0], 4.0);
+        self.painter.add_rect_center_size(
+            [570.0, 220.0],
+            [50.0, 50.0],
+            8.0,
+            [1.0, 1.0, 0.0, 1.0],
+            4.0,
+        );
 
-        self.painter
-            .add_rect([680.0, 220.0], [50.0, 50.0], 8.0, [1.0, 1.0, 0.0, 1.0], 1.0);
+        self.painter.add_rect_center_size(
+            [680.0, 220.0],
+            [50.0, 50.0],
+            8.0,
+            [1.0, 1.0, 0.0, 1.0],
+            1.0,
+        );
 
         self.painter
             .add_filled_line([400.0, 300.0], [500.0, 400.0], 8.0, [0.0, 0.0, 1.0, 1.0]);
