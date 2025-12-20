@@ -113,6 +113,17 @@ impl From<f32> for CornerRadius {
     }
 }
 
+impl From<[f32; 4]> for CornerRadius {
+    fn from(vals: [f32; 4]) -> Self {
+        CornerRadius {
+            top_left: vals[0],
+            top_right: vals[1],
+            bottom_right: vals[2],
+            bottom_left: vals[3],
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct BoundingBox {
     pub min: Vec2,

@@ -65,7 +65,13 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
         case SHAPE_TYPE_BOX: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
             let extents = vec2<f32>(shape.params[2], shape.params[3]);
-            return sd_box(p - pos, extents);
+            let corner_radii = vec4<f32>(
+                shape.params[4],
+                shape.params[5],
+                shape.params[6],
+                shape.params[7]
+            );
+            return sd_rounded_box(p - pos, extents, corner_radii);
         }
         case SHAPE_TYPE_SEGMENT: {
             let a = vec2<f32>(shape.params[0], shape.params[1]);
@@ -94,14 +100,33 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
     }
 }
 
-// SDF functions
+// SDF functions (https://iquilezles.org/articles/distfunctions2d/)
 fn sd_circle(p: vec2<f32>, radius: f32) -> f32 {
     return length(p) - radius;
 }
 
-fn sd_box(p: vec2<f32>, b: vec2<f32>) -> f32 {
-    let d = abs(p) - b;
-    return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
+// fn sd_box(p: vec2<f32>, b: vec2<f32>) -> f32 {
+//     let d = abs(p) - b;
+//     return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
+// }
+
+fn sd_rounded_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
+    var radii = vec2<f32>(0.0, 0.0);
+    if p.x > 0.0 {
+        radii.x = r.x;
+        radii.y = r.y;
+    } else {
+        radii.x = r.z;
+        radii.y = r.w;
+    }
+    if p.y > 0.0 {
+        radii.x = radii.x;
+    } else {
+        radii.x = radii.y;
+    }
+
+    let q = abs(p)-b+radii.x;
+    return min(max(q.x,q.y),0.0) + length(max(q, vec2(0.0, 0.0))) - radii.x;
 }
 
 fn sd_segment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
