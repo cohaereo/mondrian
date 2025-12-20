@@ -10,6 +10,8 @@ pub struct Shape {
     /// When non-zero, indicates that the shape should be rendered as a line
     /// with the given width instead of a filled shape.
     pub line_width: f32,
+    /// An optional group ID for the shape. SDF shapes with the same group ID are joined together
+    pub group_id: u32,
 }
 
 impl Shape {

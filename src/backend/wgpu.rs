@@ -107,6 +107,7 @@ impl WgpuRenderer {
                 self.shape_buffer_size,
                 GpuShape {
                     shape_type: u32::MAX,
+                    group_id: u32::MAX,
                     ..Default::default()
                 },
             );

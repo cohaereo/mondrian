@@ -10,7 +10,8 @@ struct Shape {
     shape_type: u32,
     distance_offset: f32,
     line_width: f32,
-    _padding: f32,
+    group_id: u32,
+
     color: vec4<f32>,
 
     params: array<f32, 8>,
@@ -33,21 +34,35 @@ fn main_vs(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<
 @fragment
 fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
     var color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-    // Go through all shapes
+    var group_dist = 0.0;
+    var last_group_id: u32 = 0xFFFFFFFF;
     for(var i: u32 = 0u; i < arrayLength(&shapes); i = i + 1u) {
         let shape = shapes[i];
         if(shape.shape_type == SHAPE_TYPE_SENTINEL) {
             break;
         }
+        var next_group_id: u32 = 0xFFFFFFFF;
+        if(i + 1u < arrayLength(&shapes)) {
+            next_group_id = shapes[i + 1u].group_id;
+        }
+
+        if(shape.group_id != last_group_id) {
+            group_dist = 1e6; // Reset distance for new group
+        }
 
         let frag_pos: vec2<f32> = frag_coord.xy;
-        var dist = sd_shape(frag_pos, shape);
+        var shape_dist = sd_shape(frag_pos, shape);
+        shape_dist += shape.distance_offset;
+        group_dist = sd_union(group_dist, shape_dist);
 
-        dist += shape.distance_offset;
-        if(shape.line_width > 0.0) {
-            dist = sd_outline(dist, shape.line_width / 2.0);
+        if(next_group_id != shape.group_id) {
+            var dist = group_dist;
+            if(shape.line_width > 0.0) {
+                dist = sd_outline(dist, shape.line_width / 2.0);
+            }
+            color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
         }
-        color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
+        last_group_id = shape.group_id;
     }
 
     return color;

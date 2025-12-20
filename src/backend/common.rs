@@ -10,7 +10,7 @@ pub struct GpuShape {
     pub shape_type: u32,
     pub distance_offset: f32,
     pub line_width: f32,
-    pub _padding: [u32; 1],
+    pub group_id: u32,
 
     #[offset(0x10)]
     pub color: Vec4,
@@ -33,7 +33,7 @@ impl From<&crate::Shape> for GpuShape {
             shape_type,
             distance_offset: value.distance_offset,
             line_width: value.line_width,
-            _padding: [u32::MAX; 1],
+            group_id: value.group_id,
             color: value.color,
             params: GpuShapeParams::from(&value.primitive),
         }

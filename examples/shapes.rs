@@ -74,6 +74,27 @@ impl ExampleApp {
             16.0,
         );
 
+        // 6 rings in a 2x3 grid (no shape grouping)
+        let yellow = [1.0, 1.0, 0.0, 1.0];
+        let blue = [0.0, 0.0, 1.0, 1.0];
+        self.painter.add_circle([100.0, 400.0], 25.0, blue, 2.0);
+        self.painter.add_circle([140.0, 400.0], 25.0, yellow, 2.0);
+        self.painter.add_circle([180.0, 400.0], 25.0, blue, 2.0);
+        self.painter.add_circle([100.0, 430.0], 25.0, yellow, 2.0);
+        self.painter.add_circle([140.0, 430.0], 25.0, blue, 2.0);
+        self.painter.add_circle([180.0, 430.0], 25.0, yellow, 2.0);
+
+        // 6 rings in a 2x3 grid (with shape grouping)
+        // Note that individual shapes in a group do not control their style. The whole group is treated as one 'shape', and uses the style of the last added shape in the group.
+        self.painter.begin_group();
+        self.painter.add_circle([100.0, 500.0], 25.0, blue, 2.0);
+        self.painter.add_circle([140.0, 500.0], 25.0, yellow, 2.0);
+        self.painter.add_circle([180.0, 500.0], 25.0, blue, 2.0);
+        self.painter.add_circle([100.0, 530.0], 25.0, yellow, 2.0);
+        self.painter.add_circle([140.0, 530.0], 25.0, blue, 2.0);
+        self.painter.add_circle([180.0, 530.0], 25.0, yellow, 2.0);
+        self.painter.end_group();
+
         self.painter.add_rect_center_size(
             [570.0, 220.0],
             [50.0, 50.0],

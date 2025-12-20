@@ -3,25 +3,56 @@ use glam::{Vec2, Vec4};
 
 pub struct Painter {
     shapes: Vec<Shape>,
+    next_group_id: u32,
+    in_group: bool,
 }
 
 impl Painter {
     pub fn new() -> Self {
-        Self { shapes: Vec::new() }
+        Self {
+            shapes: Vec::new(),
+            next_group_id: 0,
+            in_group: false,
+        }
     }
 
-    pub fn add_shape(&mut self, shape: Shape) -> &mut Shape {
+    pub fn add_shape(&mut self, mut shape: Shape) -> &mut Shape {
+        shape.group_id = if self.in_group {
+            self.next_group_id
+        } else {
+            self.next_group_id += 1;
+            self.next_group_id - 1
+        };
         self.shapes.push(shape);
         self.shapes.last_mut().unwrap()
     }
 
     fn clear_shapes(&mut self) {
         self.shapes.clear();
+        self.next_group_id = 0;
+        self.in_group = false;
     }
 
     pub fn finish<F: FnOnce(&[Shape])>(&mut self, f: F) {
         f(&self.shapes);
         self.clear_shapes();
+    }
+
+    /// Begin a group of shapes. All shapes added while in a group will share the same group ID.
+    ///
+    /// End the group with `end_group()`.
+    ///
+    /// Calling `begin_group()` while already in a group will start a new group.
+    pub fn begin_group(&mut self) {
+        if self.in_group {
+            self.next_group_id += 1;
+        }
+        self.in_group = true;
+    }
+
+    pub fn end_group(&mut self) {
+        self.in_group = false;
+        self.next_group_id += 1;
     }
 }
 
@@ -44,6 +75,7 @@ impl Painter {
             color,
             distance_offset,
             line_width: 0.0,
+            group_id: 0,
         };
         self.add_shape(shape)
     }
