@@ -1,6 +1,6 @@
 const SHAPE_TYPE_SPHERE: u32 = 0;
 const SHAPE_TYPE_TRIANGLE: u32 = 1;
-const SHAPE_TYPE_BOX: u32 = 2;
+const SHAPE_TYPE_RECT: u32 = 2;
 const SHAPE_TYPE_LINE: u32 = 3;
 const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
@@ -62,7 +62,7 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
             let p2 = vec2<f32>(shape.params[4], shape.params[5]);
             return sd_triangle(p, p0, p1, p2);
         }
-        case SHAPE_TYPE_BOX: {
+        case SHAPE_TYPE_RECT: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
             let extents = vec2<f32>(shape.params[2], shape.params[3]);
             let corner_radii = vec4<f32>(
@@ -71,7 +71,7 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
                 shape.params[6],
                 shape.params[7]
             );
-            return sd_rounded_box(p - pos, extents, corner_radii);
+            return sd_rounded_rect(p - pos, extents, corner_radii);
         }
         case SHAPE_TYPE_LINE: {
             let a = vec2<f32>(shape.params[0], shape.params[1]);
@@ -110,7 +110,7 @@ fn sd_circle(p: vec2<f32>, radius: f32) -> f32 {
 //     return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
 // }
 
-fn sd_rounded_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
+fn sd_rounded_rect(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
     var radii = vec2<f32>(0.0, 0.0);
     if p.x > 0.0 {
         radii.x = r.x;

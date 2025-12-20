@@ -22,7 +22,7 @@ impl From<&crate::Shape> for GpuShape {
         let shape_type = match value.primitive {
             Primitive::Circle { .. } => 0,
             Primitive::Triangle { .. } => 1,
-            Primitive::Box { .. } => 2,
+            Primitive::Rect { .. } => 2,
             Primitive::Line { .. } => 3,
             Primitive::CircleSector { .. } => 4,
             Primitive::PolyQuad { .. } => 5,
@@ -49,7 +49,7 @@ impl From<&Primitive> for GpuShapeParams {
         match *value {
             Primitive::Circle { center, radius } => [center.x, center.y, radius].into(),
             Primitive::Triangle { p1, p2, p3 } => [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y].into(),
-            Primitive::Box {
+            Primitive::Rect {
                 center,
                 extents,
                 corner_radius,

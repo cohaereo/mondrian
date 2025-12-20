@@ -47,7 +47,7 @@ impl Painter {
         self.add_primitive(Primitive::Circle { center, radius }, color, 0.0);
     }
 
-    pub fn add_box(
+    pub fn add_rect(
         &mut self,
         center: impl Into<Vec2>,
         extents: impl Into<Vec2>,
@@ -59,7 +59,7 @@ impl Painter {
         let corner_radius = corner_radius.into();
         let color = color.into();
         self.add_primitive(
-            Primitive::Box {
+            Primitive::Rect {
                 center,
                 extents,
                 corner_radius,

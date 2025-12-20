@@ -28,7 +28,7 @@ pub enum Primitive {
         p2: Vec2,
         p3: Vec2,
     },
-    Box {
+    Rect {
         center: Vec2,
         extents: Vec2,
         corner_radius: CornerRadius,
@@ -61,7 +61,7 @@ impl Primitive {
                 let max = p1.max(p2).max(p3);
                 BoundingBox { min, max }
             }
-            Primitive::Box {
+            Primitive::Rect {
                 center, extents, ..
             } => BoundingBox {
                 min: center - extents * 0.5,
