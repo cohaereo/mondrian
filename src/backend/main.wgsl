@@ -3,6 +3,7 @@ const SHAPE_TYPE_TRIANGLE: u32 = 1;
 const SHAPE_TYPE_BOX: u32 = 2;
 const SHAPE_TYPE_SEGMENT: u32 = 3;
 const SHAPE_TYPE_SECTOR: u32 = 4;
+const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 
 struct Shape {
@@ -78,6 +79,14 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
             let angle_start = shape.params[4];
             let angle_end = shape.params[5];
             return sd_sector(p - pos, radius_inner, radius_outer, angle_start, angle_end);
+        }
+        case SHAPE_TYPE_POLYQUAD: {
+            let v0 = vec2<f32>(shape.params[0], shape.params[1]);
+            let v1 = vec2<f32>(shape.params[2], shape.params[3]);
+            let v2 = vec2<f32>(shape.params[4], shape.params[5]);
+            let v3 = vec2<f32>(shape.params[6], shape.params[7]);
+            let vertices = array<vec2<f32>, 4>(v0, v1, v2, v3);
+            return sd_quad(p, vertices);
         }
         default: {
             return 1e6; // Large distance for unsupported shapes
@@ -162,4 +171,37 @@ fn sd_sector(p: vec2<f32>, ir: f32, or: f32, a1: f32, a2: f32) -> f32 {
 
     let closest: vec2<f32> = u * tclamped;
     return length(q - closest); // positive (outside)
+}
+
+fn sd_quad(p: vec2<f32>, v: array<vec2<f32>, 4>) -> f32 {
+    let N: u32 = 4u;
+
+    var d: f32 = dot(p - v[0], p - v[0]);
+    var s: f32 = 1.0;
+
+    var j: u32 = N - 1u;
+
+    for (var i: u32 = 0u; i < N; i = i + 1u) {
+        let vi = v[i];
+        let vj = v[j];
+
+        let e = vj - vi;
+        let w = p - vi;
+
+        let t = clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+        let b = w - e * t;
+
+        d = min(d, dot(b, b));
+
+        let cross = e.x * w.y - e.y * w.x;
+
+        if ((p.y >= vi.y && p.y < vj.y && cross > 0.0) ||
+            (p.y <  vi.y && p.y >= vj.y && cross < 0.0)) {
+            s = -s;
+        }
+
+        j = i;
+    }
+
+    return s * sqrt(d);
 }

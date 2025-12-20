@@ -55,8 +55,16 @@ impl ExampleApp {
             25.0 + pulsate * 5.0,
             50.0 - pulsate * 5.0,
             angle,
-            (angle + std::f32::consts::PI / 2.0) % TAU,
+            (angle + pulsate * 0.4 + std::f32::consts::PI / 2.0) % TAU,
             [1.0, 1.0, 1.0, 1.0],
+        );
+
+        self.painter.add_polyquad(
+            [380.0, 50.0],
+            [420.0, 50.0],
+            [450.0, 150.0],
+            [350.0, 150.0],
+            [1.0, 0.5, 0.1, 1.0],
         );
 
         let top_left = Vec2::ZERO;

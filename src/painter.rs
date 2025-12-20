@@ -123,4 +123,17 @@ impl Painter {
             0.0,
         );
     }
+
+    pub fn add_polyquad(
+        &mut self,
+        p1: impl Into<Vec2>,
+        p2: impl Into<Vec2>,
+        p3: impl Into<Vec2>,
+        p4: impl Into<Vec2>,
+        color: impl Into<Vec4>,
+    ) {
+        let points = [p1.into(), p2.into(), p3.into(), p4.into()];
+        let color = color.into();
+        self.add_primitive(Primitive::PolyQuad { points }, color, 0.0);
+    }
 }

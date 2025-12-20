@@ -44,6 +44,9 @@ pub enum Primitive {
         angle_start: f32,
         angle_end: f32,
     },
+    PolyQuad {
+        points: [Vec2; 4],
+    },
 }
 
 impl Primitive {
@@ -77,6 +80,15 @@ impl Primitive {
                 min: center - Vec2::splat(radius_outer),
                 max: center + Vec2::splat(radius_outer),
             },
+            Primitive::PolyQuad { points } => {
+                let mut min = points[0];
+                let mut max = points[0];
+                for &point in &points[1..] {
+                    min = min.min(point);
+                    max = max.max(point);
+                }
+                BoundingBox { min, max }
+            }
         }
     }
 }
