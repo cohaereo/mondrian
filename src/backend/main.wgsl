@@ -8,6 +8,8 @@ const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 
 const TILE_SIZE: f32 = 32.0;
 
+const ANTI_ALIASING: bool = true;
+
 struct Shape {
     shape_type: u32,
     distance_offset: f32,
@@ -67,7 +69,7 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
             group_dist = 1e6; // Reset distance for new group
         }
 
-        let frag_pos: vec2<f32> = frag_coord.xy;
+        let frag_pos: vec2<f32> = floor(frag_coord.xy);
         var shape_dist = sd_shape(frag_pos, shape);
         shape_dist += shape.distance_offset;
         group_dist = sd_union(group_dist, shape_dist);
@@ -77,7 +79,14 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
             if(shape.line_width > 0.0) {
                 dist = sd_outline(dist, shape.line_width / 2.0);
             }
-            color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
+
+            if ANTI_ALIASING {
+                color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
+            } else {
+                if(dist < 0.5) {
+                    color = shape.color;
+                }
+            }
         }
         last_group_id = shape.group_id;
     }
