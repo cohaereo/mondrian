@@ -13,3 +13,7 @@ wgpu = "27.0.1"
 fastrand = "2.3.0"
 pollster = "0.4.0"
 winit = "0.30.12"
+
+[profile.profiling]
+inherits = "release"
+debug = true

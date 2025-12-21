@@ -1,6 +1,6 @@
 use crate::{
     binner::ShapeBinner,
-    shape::{BoundingBox, CornerRadius, Primitive, Shape},
+    shape::{CornerRadius, Primitive, Shape},
 };
 use glam::{Vec2, Vec4};
 
@@ -36,10 +36,6 @@ impl Painter {
             self.next_group_id - 1
         };
         self.shapes.push(shape);
-        if !self.in_group {
-            // Treat a single shape as a group for binning purposes
-            self.end_group_internal();
-        }
     }
 
     fn clear_shapes(&mut self) {
@@ -61,7 +57,7 @@ impl Painter {
             panic!("Painter::finish() called before Painter::start()");
         }
 
-        self.binner.calculate_shape_ranges();
+        self.binner.bin_shapes(&self.shapes);
         f(&self.shapes, &self.binner);
         self.clear_shapes();
         self.started = false;
@@ -81,28 +77,8 @@ impl Painter {
     }
 
     pub fn end_group(&mut self) {
-        self.end_group_internal();
         self.in_group = false;
         self.next_group_id += 1;
-    }
-
-    fn end_group_internal(&mut self) {
-        let last_shape_index = self.shapes.len();
-        let shape_range = self.first_shape_in_group as u32..last_shape_index as u32;
-        if !self.in_group {
-            let bounds = if let Some(shape) = self.shapes.get(self.first_shape_in_group) {
-                shape.bounds()
-            } else {
-                BoundingBox::INFINITE
-            };
-            self.binner.bin_shape_group(&bounds, shape_range);
-        } else {
-            let mut group_bounds = BoundingBox::EMPTY;
-            for shape in &self.shapes[self.first_shape_in_group..last_shape_index] {
-                group_bounds = group_bounds.union(&shape.bounds());
-            }
-            self.binner.bin_shape_group(&group_bounds, shape_range);
-        }
     }
 }
 

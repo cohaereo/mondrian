@@ -1,6 +1,6 @@
 use glam::uvec2;
 
-use crate::shape::BoundingBox;
+use crate::{Shape, shape::BoundingBox};
 
 /// Structure used for shape tile-binning on the CPU side
 pub struct ShapeBinner {
@@ -28,14 +28,45 @@ impl ShapeBinner {
         self.resolution = resolution;
         let tiles_x = resolution.0.div_ceil(self.tile_size);
         let tiles_y = resolution.1.div_ceil(self.tile_size);
-        // Clear each tile individually to avoid reallocations
-        self.shapes_by_tile.iter_mut().for_each(|v| v.clear());
         // Resize the outer vector, adding/removing tile vectors where neded
         self.shapes_by_tile
             .resize((tiles_x * tiles_y) as usize, Vec::new());
     }
 
-    pub fn bin_shape_group(&mut self, bounds: &BoundingBox, shape_indices: std::ops::Range<u32>) {
+    pub fn bin_shapes(&mut self, shapes: &[Shape]) {
+        self.shapes_by_tile.iter_mut().for_each(|v| v.clear());
+
+        let mut current_group_id = 0;
+        let mut group_start_index = 0;
+        for (i, _shape) in shapes.iter().enumerate() {
+            let next_group_id = shapes.get(i + 1).map(|s| s.group_id);
+            if next_group_id != Some(current_group_id) {
+                let shape_range = group_start_index as u32..(i as u32 + 1);
+                let bounds = shapes[group_start_index..=i]
+                    .iter()
+                    .fold(None, |acc: Option<BoundingBox>, s| {
+                        let shape_bounds = s.bounds();
+                        Some(if let Some(acc_bounds) = acc {
+                            BoundingBox {
+                                min: acc_bounds.min.min(shape_bounds.min),
+                                max: acc_bounds.max.max(shape_bounds.max),
+                            }
+                        } else {
+                            shape_bounds
+                        })
+                    })
+                    .unwrap();
+                self.bin_shape_group(&bounds, shape_range);
+
+                group_start_index = i + 1;
+                current_group_id = next_group_id.unwrap_or(0);
+            }
+        }
+
+        self.calculate_shape_ranges();
+    }
+
+    fn bin_shape_group(&mut self, bounds: &BoundingBox, shape_indices: std::ops::Range<u32>) {
         let start_tile = uvec2(
             (bounds.min.x / self.tile_size as f32).floor() as u32,
             (bounds.min.y / self.tile_size as f32).floor() as u32,
@@ -59,7 +90,7 @@ impl ShapeBinner {
     }
 
     /// Bin shapes into tiles. Clears previous data before binning.
-    pub fn calculate_shape_ranges(&mut self) {
+    fn calculate_shape_ranges(&mut self) {
         self.tile_ranges.clear();
         self.shape_indices.clear();
 
