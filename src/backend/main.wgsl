@@ -6,6 +6,8 @@ const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 
+const TILE_SIZE: f32 = 8.0;
+
 struct Shape {
     shape_type: u32,
     distance_offset: f32,
@@ -20,6 +22,14 @@ struct Shape {
 @group(0) @binding(0)
 var<storage, read> shapes: array<Shape>;
 
+@group(0) @binding(1)
+var<storage, read> shape_ranges: array<u32>;
+
+@group(0) @binding(2)
+var<storage, read> shape_indices: array<u32>;
+
+var<push_constant> screen_width_tiles: u32;
+
 @vertex
 fn main_vs(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<f32> {
     // Generate a fullscreen triangle
@@ -33,11 +43,18 @@ fn main_vs(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<
 
 @fragment
 fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
+    let tile_x = u32(frag_coord.x / TILE_SIZE);
+    let tile_y = u32(frag_coord.y / TILE_SIZE);
+    let tile_index = tile_y * screen_width_tiles + tile_x;
+    let shape_start = shape_ranges[tile_index];
+    let shape_end = shape_ranges[tile_index + 1u];
+
     var color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 1.0);
     var group_dist = 0.0;
     var last_group_id: u32 = 0xFFFFFFFF;
-    for(var i: u32 = 0u; i < arrayLength(&shapes); i = i + 1u) {
-        let shape = shapes[i];
+    for(var i: u32 = shape_start; i < shape_end; i = i + 1u) {
+        let shape_index = shape_indices[i];
+        let shape = shapes[shape_index];
         if(shape.shape_type == SHAPE_TYPE_SENTINEL) {
             break;
         }

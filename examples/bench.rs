@@ -7,13 +7,15 @@ use winit::{application::ApplicationHandler, keyboard::KeyCode, window::WindowAt
 fn main() {
     let event_loop = winit::event_loop::EventLoop::new().expect("Failed to create event loop");
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
+
+    const NUM_FRAMES: usize = 10000;
     let mut app = ExampleApp {
         painter: mondrian::Painter::new(),
         device: None,
         renderer: None,
-        warmup_frames: 10,
-        bench_frames: 100,
-        frametimes: Vec::with_capacity(100),
+        bench_frames: NUM_FRAMES,
+        current_frame: 0,
+        start_time: std::time::Instant::now(),
     };
     event_loop
         .run_app(&mut app)
@@ -25,9 +27,9 @@ struct ExampleApp {
     device: Option<Device<'static>>,
     renderer: Option<mondrian::backend::wgpu::WgpuRenderer>,
 
-    warmup_frames: usize,
     bench_frames: usize,
-    frametimes: Vec<f32>,
+    current_frame: usize,
+    start_time: std::time::Instant,
 }
 
 impl ExampleApp {
@@ -44,7 +46,7 @@ impl ExampleApp {
         self.painter
             .start((device.surface_config.width, device.surface_config.height));
 
-        for _ in 0..5000 {
+        for _ in 0..10000 {
             let x = fastrand::f32() * device.surface_config.width as f32;
             let y = fastrand::f32() * device.surface_config.height as f32;
             let radius = fastrand::f32() * 10.0;
@@ -83,12 +85,7 @@ impl ExampleApp {
             timestamp_writes: None,
         });
         self.painter.finish(|shapes, binner| {
-            renderer.update_shape_buffer(
-                &device.device,
-                &device.queue,
-                shapes,
-                (device.surface_config.width, device.surface_config.height),
-            );
+            renderer.update_shape_buffer(&device.device, &device.queue, shapes, binner);
             renderer.render(&mut pass);
         });
 
@@ -103,7 +100,7 @@ impl ApplicationHandler for ExampleApp {
         let window = event_loop
             .create_window(
                 WindowAttributes::default()
-                    .with_title("Mondrian 5k Circles Benchmark")
+                    .with_title("Mondrian 10k Circles Benchmark")
                     .with_inner_size(winit::dpi::Size::Physical(winit::dpi::PhysicalSize::new(
                         1920, 1080,
                     ))),
@@ -125,6 +122,8 @@ impl ApplicationHandler for ExampleApp {
     ) {
         match event {
             winit::event::WindowEvent::CloseRequested => {
+                drop(self.renderer.take());
+                drop(self.device.take());
                 event_loop.exit();
             }
             winit::event::WindowEvent::KeyboardInput { event, .. } => {
@@ -133,26 +132,16 @@ impl ApplicationHandler for ExampleApp {
                 }
             }
             winit::event::WindowEvent::RedrawRequested => {
-                let start_time = std::time::Instant::now();
                 self.draw();
-                let elapsed = start_time.elapsed().as_secs_f32();
-                if self.warmup_frames > 0 {
-                    self.warmup_frames -= 1;
-                } else if self.bench_frames > 0 {
-                    self.frametimes.push(elapsed);
-                    self.bench_frames -= 1;
-                    if self.bench_frames == 0 {
-                        let total_time: f32 = self.frametimes.iter().sum();
-                        let avg_time = total_time / self.frametimes.len() as f32;
-                        let fps = 1.0 / avg_time;
-                        println!(
-                            "Average frame time over {} frames: {:.3} ms ({:.2} FPS)",
-                            self.frametimes.len(),
-                            avg_time * 1000.0,
-                            fps
-                        );
-                        event_loop.exit();
-                    }
+                self.current_frame += 1;
+                if self.current_frame >= self.bench_frames {
+                    let elapsed = self.start_time.elapsed().as_secs_f32();
+                    let fps = self.bench_frames as f32 / elapsed;
+                    println!(
+                        "Rendered {} frames in {:.2} seconds ({:.2} FPS)",
+                        self.bench_frames, elapsed, fps
+                    );
+                    event_loop.exit();
                 }
 
                 self.device.as_ref().unwrap().window.request_redraw();
@@ -184,7 +173,10 @@ struct Device<'a> {
 
 impl<'a> Device<'a> {
     async fn new(window: winit::window::Window) -> Self {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::PRIMARY,
+            ..wgpu::InstanceDescriptor::from_env_or_default()
+        });
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -196,6 +188,11 @@ impl<'a> Device<'a> {
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::PUSH_CONSTANTS,
+                required_limits: wgpu::Limits {
+                    max_push_constant_size: 4,
+                    ..Default::default()
+                },
                 ..Default::default()
             })
             .await

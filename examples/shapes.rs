@@ -206,12 +206,7 @@ impl ExampleApp {
             timestamp_writes: None,
         });
         self.painter.finish(|shapes, binner| {
-            renderer.update_shape_buffer(
-                &device.device,
-                &device.queue,
-                shapes,
-                (device.surface_config.width, device.surface_config.height),
-            );
+            renderer.update_shape_buffer(&device.device, &device.queue, shapes, binner);
             renderer.render(&mut pass);
         });
 
@@ -298,6 +293,11 @@ impl<'a> Device<'a> {
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::PUSH_CONSTANTS,
+                required_limits: wgpu::Limits {
+                    max_push_constant_size: 4,
+                    ..Default::default()
+                },
                 ..Default::default()
             })
             .await
