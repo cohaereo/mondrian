@@ -1,6 +1,6 @@
 use std::{f32::consts::TAU, ops::Deref};
 
-use glam::{Vec2, vec2};
+use glam::{Vec2, vec2, vec3};
 use wgpu::rwh::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::{application::ApplicationHandler, keyboard::KeyCode, window::WindowAttributes};
 
@@ -46,7 +46,7 @@ impl ExampleApp {
                 device.surface_config.height as f32,
             ],
             0.0,
-            [0.01, 0.01, 0.02, 1.0],
+            (vec3(0.01, 0.01, 0.02) * 0.2).extend(1.0),
         );
 
         self.painter
@@ -66,14 +66,6 @@ impl ExampleApp {
             [100.0, 50.0],
             [32.0, 4.0, 32.0, 32.0],
             [1.0, 0.0, 1.0, 1.0],
-        );
-
-        self.painter.add_rect_center_size(
-            [450.0, 220.0],
-            [50.0, 50.0],
-            8.0,
-            [1.0, 1.0, 0.0, 1.0],
-            16.0,
         );
 
         // 6 rings in a 2x3 grid (no shape grouping)
@@ -96,6 +88,14 @@ impl ExampleApp {
         self.painter.add_circle([140.0, 530.0], 25.0, blue, 2.0);
         self.painter.add_circle([180.0, 530.0], 25.0, yellow, 2.0);
         self.painter.end_group();
+
+        self.painter.add_rect_center_size(
+            [450.0, 220.0],
+            [50.0, 50.0],
+            8.0,
+            [1.0, 1.0, 0.0, 1.0],
+            16.0,
+        );
 
         self.painter.add_rect_center_size(
             [570.0, 220.0],

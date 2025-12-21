@@ -1,6 +1,6 @@
-use glam::uvec2;
+use glam::{Vec2, uvec2, vec2};
 
-use crate::Shape;
+use crate::{Shape, shape::BoundingBox};
 
 /// Structure used for shape tile-binning on the CPU side
 pub struct ShapeBinner {
@@ -37,6 +37,10 @@ impl ShapeBinner {
 
     pub fn bin_shape(&mut self, shape: &Shape, shape_index: usize) {
         let bounds = shape.bounds();
+        // let bounds = BoundingBox {
+        //     min: Vec2::ZERO,
+        //     max: vec2(self.resolution.0 as f32, self.resolution.1 as f32),
+        // };
         let start_tile = uvec2(
             (bounds.min.x / self.tile_size as f32).floor() as u32,
             (bounds.min.y / self.tile_size as f32).floor() as u32,

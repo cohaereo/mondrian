@@ -100,14 +100,14 @@ fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
         }
         case SHAPE_TYPE_RECT: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
-            let extents = vec2<f32>(shape.params[2], shape.params[3]);
+            let half_extents = vec2<f32>(shape.params[2], shape.params[3]);
             let corner_radii = vec4<f32>(
                 shape.params[4],
                 shape.params[5],
                 shape.params[6],
                 shape.params[7]
             );
-            return sd_rounded_rect(p - pos, extents, corner_radii);
+            return sd_rounded_rect(p - pos, half_extents, corner_radii);
         }
         case SHAPE_TYPE_LINE: {
             let a = vec2<f32>(shape.params[0], shape.params[1]);

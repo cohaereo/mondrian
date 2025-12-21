@@ -58,7 +58,7 @@ impl From<&Primitive> for GpuShapeParams {
             Primitive::Triangle { p1, p2, p3 } => [p1.x, p1.y, p2.x, p2.y, p3.x, p3.y].into(),
             Primitive::Rect {
                 center,
-                extents,
+                half_extents: extents,
                 corner_radius,
             } => [
                 center.x,

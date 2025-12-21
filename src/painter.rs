@@ -25,7 +25,7 @@ impl Painter {
         }
     }
 
-    pub fn add_shape(&mut self, mut shape: Shape) -> &mut Shape {
+    pub fn add_shape(&mut self, mut shape: Shape) {
         shape.group_id = if self.in_group {
             self.next_group_id
         } else {
@@ -34,7 +34,6 @@ impl Painter {
         };
         self.binner.bin_shape(&shape, self.shapes.len());
         self.shapes.push(shape);
-        self.shapes.last_mut().unwrap()
     }
 
     fn clear_shapes(&mut self) {
@@ -93,12 +92,13 @@ impl Painter {
         primitive: Primitive,
         color: Vec4,
         distance_offset: f32,
-    ) -> &mut Shape {
+        line_width: f32,
+    ) {
         let shape = Shape {
             primitive,
             color,
             distance_offset,
-            line_width: 0.0,
+            line_width,
             group_id: 0,
         };
         self.add_shape(shape)
@@ -110,12 +110,10 @@ impl Painter {
         radius: f32,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
+    ) {
         let center = center.into();
         let color = color.into();
-        let shape = self.add_primitive(Primitive::Circle { center, radius }, color, 0.0);
-        shape.line_width = line_width;
-        shape
+        self.add_primitive(Primitive::Circle { center, radius }, color, 0.0, line_width);
     }
 
     pub fn add_filled_circle(
@@ -123,10 +121,10 @@ impl Painter {
         center: impl Into<Vec2>,
         radius: f32,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let center = center.into();
         let color = color.into();
-        self.add_primitive(Primitive::Circle { center, radius }, color, 0.0)
+        self.add_primitive(Primitive::Circle { center, radius }, color, 0.0, 0.0);
     }
 
     pub fn add_rect(
@@ -136,24 +134,23 @@ impl Painter {
         corner_radius: impl Into<CornerRadius>,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
+    ) {
         let min = min.into();
         let max = max.into();
         let center = (min + max) * 0.5;
-        let extents = max - min;
+        let half_extents = max - min;
         let corner_radius = corner_radius.into();
         let color = color.into();
-        let shape = self.add_primitive(
+        self.add_primitive(
             Primitive::Rect {
                 center,
-                extents,
+                half_extents,
                 corner_radius,
             },
             color,
             0.0,
+            line_width,
         );
-        shape.line_width = line_width;
-        shape
     }
 
     pub fn add_filled_rect(
@@ -162,69 +159,70 @@ impl Painter {
         max: impl Into<Vec2>,
         corner_radius: impl Into<CornerRadius>,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let min = min.into();
         let max = max.into();
         let center = (min + max) * 0.5;
-        let extents = max - min;
+        let half_extents = max - min;
         let corner_radius = corner_radius.into();
         let color = color.into();
         self.add_primitive(
             Primitive::Rect {
                 center,
-                extents,
+                half_extents,
                 corner_radius,
             },
             color,
             0.0,
-        )
+            0.0,
+        );
     }
 
     pub fn add_rect_center_size(
         &mut self,
         center: impl Into<Vec2>,
-        extents: impl Into<Vec2>,
+        half_extents: impl Into<Vec2>,
         corner_radius: impl Into<CornerRadius>,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
+    ) {
         let center = center.into();
-        let extents = extents.into();
-        let corner_radius = corner_radius.into();
-        let color = color.into();
-        let shape = self.add_primitive(
-            Primitive::Rect {
-                center,
-                extents,
-                corner_radius,
-            },
-            color,
-            0.0,
-        );
-        shape.line_width = line_width;
-        shape
-    }
-
-    pub fn add_filled_rect_center_size(
-        &mut self,
-        center: impl Into<Vec2>,
-        extents: impl Into<Vec2>,
-        corner_radius: impl Into<CornerRadius>,
-        color: impl Into<Vec4>,
-    ) -> &mut Shape {
-        let center = center.into();
-        let extents = extents.into();
+        let half_extents = half_extents.into();
         let corner_radius = corner_radius.into();
         let color = color.into();
         self.add_primitive(
             Primitive::Rect {
                 center,
-                extents,
+                half_extents,
                 corner_radius,
             },
             color,
             0.0,
-        )
+            line_width,
+        );
+    }
+
+    pub fn add_filled_rect_center_size(
+        &mut self,
+        center: impl Into<Vec2>,
+        half_extents: impl Into<Vec2>,
+        corner_radius: impl Into<CornerRadius>,
+        color: impl Into<Vec4>,
+    ) {
+        let center = center.into();
+        let half_extents = half_extents.into();
+        let corner_radius = corner_radius.into();
+        let color = color.into();
+        self.add_primitive(
+            Primitive::Rect {
+                center,
+                half_extents,
+                corner_radius,
+            },
+            color,
+            0.0,
+            0.0,
+        );
     }
 
     pub fn add_line(
@@ -233,13 +231,11 @@ impl Painter {
         p2: impl Into<Vec2>,
         radius: f32,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let p1 = p1.into();
         let p2 = p2.into();
         let color = color.into();
-        let shape = self.add_primitive(Primitive::Line { p1, p2 }, color, radius);
-        shape.line_width = radius * 2.0;
-        shape
+        self.add_primitive(Primitive::Line { p1, p2 }, color, radius, 0.0);
     }
 
     pub fn add_filled_line(
@@ -248,11 +244,11 @@ impl Painter {
         p2: impl Into<Vec2>,
         radius: f32,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let p1 = p1.into();
         let p2 = p2.into();
         let color = color.into();
-        self.add_primitive(Primitive::Line { p1, p2 }, color, -radius)
+        self.add_primitive(Primitive::Line { p1, p2 }, color, -radius, 0.0)
     }
 
     pub fn add_triangle(
@@ -262,14 +258,12 @@ impl Painter {
         p3: impl Into<Vec2>,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
+    ) {
         let p1 = p1.into();
         let p2 = p2.into();
         let p3 = p3.into();
         let color = color.into();
-        let shape = self.add_primitive(Primitive::Triangle { p1, p2, p3 }, color, 0.0);
-        shape.line_width = line_width;
-        shape
+        self.add_primitive(Primitive::Triangle { p1, p2, p3 }, color, 0.0, line_width);
     }
 
     pub fn add_filled_triangle(
@@ -278,12 +272,12 @@ impl Painter {
         p2: impl Into<Vec2>,
         p3: impl Into<Vec2>,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let p1 = p1.into();
         let p2 = p2.into();
         let p3 = p3.into();
         let color = color.into();
-        self.add_primitive(Primitive::Triangle { p1, p2, p3 }, color, 0.0)
+        self.add_primitive(Primitive::Triangle { p1, p2, p3 }, color, 0.0, 0.0);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -296,37 +290,7 @@ impl Painter {
         angle_end: impl Into<f32>,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
-        let center = center.into();
-        let radius_inner = radius_inner.into();
-        let radius_outer = radius_outer.into();
-        let angle_start = angle_start.into();
-        let angle_end = angle_end.into();
-        let color = color.into();
-        let shape = self.add_primitive(
-            Primitive::CircleSector {
-                center,
-                radius_inner,
-                radius_outer,
-                angle_start,
-                angle_end,
-            },
-            color,
-            0.0,
-        );
-        shape.line_width = line_width;
-        shape
-    }
-
-    pub fn add_filled_circle_sector(
-        &mut self,
-        center: impl Into<Vec2>,
-        radius_inner: impl Into<f32>,
-        radius_outer: impl Into<f32>,
-        angle_start: impl Into<f32>,
-        angle_end: impl Into<f32>,
-        color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let center = center.into();
         let radius_inner = radius_inner.into();
         let radius_outer = radius_outer.into();
@@ -343,7 +307,37 @@ impl Painter {
             },
             color,
             0.0,
-        )
+            line_width,
+        );
+    }
+
+    pub fn add_filled_circle_sector(
+        &mut self,
+        center: impl Into<Vec2>,
+        radius_inner: impl Into<f32>,
+        radius_outer: impl Into<f32>,
+        angle_start: impl Into<f32>,
+        angle_end: impl Into<f32>,
+        color: impl Into<Vec4>,
+    ) {
+        let center = center.into();
+        let radius_inner = radius_inner.into();
+        let radius_outer = radius_outer.into();
+        let angle_start = angle_start.into();
+        let angle_end = angle_end.into();
+        let color = color.into();
+        self.add_primitive(
+            Primitive::CircleSector {
+                center,
+                radius_inner,
+                radius_outer,
+                angle_start,
+                angle_end,
+            },
+            color,
+            0.0,
+            0.0,
+        );
     }
 
     pub fn add_polyquad(
@@ -354,12 +348,10 @@ impl Painter {
         p4: impl Into<Vec2>,
         color: impl Into<Vec4>,
         line_width: f32,
-    ) -> &mut Shape {
+    ) {
         let points = [p1.into(), p2.into(), p3.into(), p4.into()];
         let color = color.into();
-        let shape = self.add_primitive(Primitive::PolyQuad { points }, color, 0.0);
-        shape.line_width = line_width;
-        shape
+        self.add_primitive(Primitive::PolyQuad { points }, color, 0.0, line_width);
     }
 
     pub fn add_filled_polyquad(
@@ -369,9 +361,9 @@ impl Painter {
         p3: impl Into<Vec2>,
         p4: impl Into<Vec2>,
         color: impl Into<Vec4>,
-    ) -> &mut Shape {
+    ) {
         let points = [p1.into(), p2.into(), p3.into(), p4.into()];
         let color = color.into();
-        self.add_primitive(Primitive::PolyQuad { points }, color, 0.0)
+        self.add_primitive(Primitive::PolyQuad { points }, color, 0.0, 0.0)
     }
 }

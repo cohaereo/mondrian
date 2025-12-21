@@ -20,7 +20,7 @@ impl Shape {
     /// This is a conservative estimate, as it is primarily used for tile binning. As such, it may be (slightly) larger than the actual bounds.
     pub fn bounds(&self) -> BoundingBox {
         let mut bounds = self.primitive.bounds();
-        bounds.grow(self.distance_offset);
+        bounds.grow(-self.distance_offset);
         bounds.grow(self.line_width * 0.5);
         bounds
     }
@@ -39,7 +39,7 @@ pub enum Primitive {
     },
     Rect {
         center: Vec2,
-        extents: Vec2,
+        half_extents: Vec2,
         corner_radius: CornerRadius,
     },
     Line {
@@ -71,10 +71,12 @@ impl Primitive {
                 BoundingBox { min, max }
             }
             Primitive::Rect {
-                center, extents, ..
+                center,
+                half_extents: extents,
+                ..
             } => BoundingBox {
-                min: center - extents * 0.5,
-                max: center + extents * 0.5,
+                min: center - extents,
+                max: center + extents,
             },
             Primitive::Line { p1, p2 } => {
                 let min = p1.min(p2);
