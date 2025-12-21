@@ -22,7 +22,7 @@ impl Painter {
             in_group: false,
             first_shape_in_group: 0,
 
-            binner: ShapeBinner::new(8, (0, 0)),
+            binner: ShapeBinner::new(32, (0, 0)),
             started: false,
         }
     }

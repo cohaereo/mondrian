@@ -6,7 +6,7 @@ const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
 
-const TILE_SIZE: f32 = 8.0;
+const TILE_SIZE: f32 = 32.0;
 
 struct Shape {
     shape_type: u32,
