@@ -11,8 +11,7 @@ wgpu = "27.0.1"
 
 [dev-dependencies]
 fastrand = "2.3.0"
-pollster = "0.4.0"
-winit = "0.30.12"
+example_lib = { path = "examples/examplelib" }
 
 [profile.profiling]
 inherits = "release"
