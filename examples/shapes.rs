@@ -312,9 +312,10 @@ impl<'a> Device<'a> {
                 })
                 .expect("Failed to create surface")
         };
-        let surface_config = surface
+        let mut surface_config = surface
             .get_default_config(&adapter, window_size.width, window_size.height)
             .expect("Failed to get default surface config");
+        surface_config.present_mode = wgpu::PresentMode::Mailbox;
         surface.configure(&device, &surface_config);
 
         Self {
