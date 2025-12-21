@@ -1,13 +1,13 @@
-use glam::{Vec2, uvec2, vec2};
+use glam::uvec2;
 
-use crate::{Shape, shape::BoundingBox};
+use crate::shape::BoundingBox;
 
 /// Structure used for shape tile-binning on the CPU side
 pub struct ShapeBinner {
     pub tile_size: u32,
     pub resolution: (u32, u32),
 
-    pub shapes_by_tile: Vec<Vec<usize>>,
+    pub shapes_by_tile: Vec<Vec<u32>>,
 
     pub tile_ranges: Vec<u32>,
     pub shape_indices: Vec<u32>,
@@ -35,12 +35,7 @@ impl ShapeBinner {
             .resize((tiles_x * tiles_y) as usize, Vec::new());
     }
 
-    pub fn bin_shape(&mut self, shape: &Shape, shape_index: usize) {
-        let bounds = shape.bounds();
-        // let bounds = BoundingBox {
-        //     min: Vec2::ZERO,
-        //     max: vec2(self.resolution.0 as f32, self.resolution.1 as f32),
-        // };
+    pub fn bin_shape_group(&mut self, bounds: &BoundingBox, shape_indices: std::ops::Range<u32>) {
         let start_tile = uvec2(
             (bounds.min.x / self.tile_size as f32).floor() as u32,
             (bounds.min.y / self.tile_size as f32).floor() as u32,
@@ -57,7 +52,7 @@ impl ShapeBinner {
             for tile_x in start_tile.x..start_tile.x + num_tiles_x {
                 let tile_index = (tile_y * screen_tiles_x + tile_x) as usize;
                 if let Some(tile_shapes) = self.shapes_by_tile.get_mut(tile_index) {
-                    tile_shapes.push(shape_index);
+                    tile_shapes.extend(shape_indices.clone());
                 }
             }
         }
@@ -75,8 +70,7 @@ impl ShapeBinner {
         self.tile_ranges.reserve(total_tiles as usize + 1);
         self.tile_ranges.push(0); // First tile starts at index 0
         for tile_shapes in &self.shapes_by_tile {
-            self.shape_indices
-                .extend(tile_shapes.iter().map(|&i| i as u32));
+            self.shape_indices.extend(tile_shapes.iter());
             self.tile_ranges.push(self.shape_indices.len() as u32);
         }
     }

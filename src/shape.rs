@@ -142,8 +142,24 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
+    pub const EMPTY: Self = BoundingBox {
+        min: Vec2::splat(f32::MAX),
+        max: Vec2::splat(f32::MIN),
+    };
+    pub const INFINITE: Self = BoundingBox {
+        min: Vec2::splat(f32::MIN),
+        max: Vec2::splat(f32::MAX),
+    };
+
     pub fn grow(&mut self, amount: f32) {
         self.min -= Vec2::splat(amount);
         self.max += Vec2::splat(amount);
+    }
+
+    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
+        BoundingBox {
+            min: self.min.min(other.min),
+            max: self.max.max(other.max),
+        }
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     binner::ShapeBinner,
-    shape::{CornerRadius, Primitive, Shape},
+    shape::{BoundingBox, CornerRadius, Primitive, Shape},
 };
 use glam::{Vec2, Vec4};
 
@@ -8,6 +8,7 @@ pub struct Painter {
     shapes: Vec<Shape>,
     next_group_id: u32,
     in_group: bool,
+    first_shape_in_group: usize,
 
     binner: ShapeBinner,
     started: bool,
@@ -19,6 +20,7 @@ impl Painter {
             shapes: Vec::new(),
             next_group_id: 0,
             in_group: false,
+            first_shape_in_group: 0,
 
             binner: ShapeBinner::new(8, (0, 0)),
             started: false,
@@ -29,11 +31,15 @@ impl Painter {
         shape.group_id = if self.in_group {
             self.next_group_id
         } else {
+            self.first_shape_in_group = self.shapes.len();
             self.next_group_id += 1;
             self.next_group_id - 1
         };
-        self.binner.bin_shape(&shape, self.shapes.len());
         self.shapes.push(shape);
+        if !self.in_group {
+            // Treat a single shape as a group for binning purposes
+            self.end_group_internal();
+        }
     }
 
     fn clear_shapes(&mut self) {
@@ -71,11 +77,32 @@ impl Painter {
             self.next_group_id += 1;
         }
         self.in_group = true;
+        self.first_shape_in_group = self.shapes.len();
     }
 
     pub fn end_group(&mut self) {
+        self.end_group_internal();
         self.in_group = false;
         self.next_group_id += 1;
+    }
+
+    fn end_group_internal(&mut self) {
+        let last_shape_index = self.shapes.len();
+        let shape_range = self.first_shape_in_group as u32..last_shape_index as u32;
+        if !self.in_group {
+            let bounds = if let Some(shape) = self.shapes.get(self.first_shape_in_group) {
+                shape.bounds()
+            } else {
+                BoundingBox::INFINITE
+            };
+            self.binner.bin_shape_group(&bounds, shape_range);
+        } else {
+            let mut group_bounds = BoundingBox::EMPTY;
+            for shape in &self.shapes[self.first_shape_in_group..last_shape_index] {
+                group_bounds = group_bounds.union(&shape.bounds());
+            }
+            self.binner.bin_shape_group(&group_bounds, shape_range);
+        }
     }
 }
 

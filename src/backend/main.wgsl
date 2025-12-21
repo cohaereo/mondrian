@@ -59,8 +59,8 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
             break;
         }
         var next_group_id: u32 = 0xFFFFFFFF;
-        if(i + 1u < arrayLength(&shapes)) {
-            next_group_id = shapes[i + 1u].group_id;
+        if(i + 1u < shape_end) {
+            next_group_id = shapes[shape_indices[i + 1u]].group_id;
         }
 
         if(shape.group_id != last_group_id) {
