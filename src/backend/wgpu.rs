@@ -100,6 +100,7 @@ impl WgpuRenderer {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         shapes: &[Shape],
+        resolution: (u32, u32),
     ) {
         let mut gpu_shapes: Vec<GpuShape> = shapes.iter().map(|s| s.into()).collect();
         if gpu_shapes.len() < self.shape_buffer_size {

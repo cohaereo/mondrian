@@ -1,10 +1,16 @@
-use crate::shape::{CornerRadius, Primitive, Shape};
+use crate::{
+    binner::ShapeBinner,
+    shape::{CornerRadius, Primitive, Shape},
+};
 use glam::{Vec2, Vec4};
 
 pub struct Painter {
     shapes: Vec<Shape>,
     next_group_id: u32,
     in_group: bool,
+
+    binner: ShapeBinner,
+    started: bool,
 }
 
 impl Painter {
@@ -13,6 +19,9 @@ impl Painter {
             shapes: Vec::new(),
             next_group_id: 0,
             in_group: false,
+
+            binner: ShapeBinner::new(8, (0, 0)),
+            started: false,
         }
     }
 
@@ -23,6 +32,7 @@ impl Painter {
             self.next_group_id += 1;
             self.next_group_id - 1
         };
+        self.binner.bin_shape(&shape, self.shapes.len());
         self.shapes.push(shape);
         self.shapes.last_mut().unwrap()
     }
@@ -33,9 +43,23 @@ impl Painter {
         self.in_group = false;
     }
 
-    pub fn finish<F: FnOnce(&[Shape])>(&mut self, f: F) {
-        f(&self.shapes);
+    pub fn start(&mut self, resolution: (u32, u32)) {
+        if self.started {
+            panic!("Painter::start() called before Painter::finish()");
+        }
+        self.binner.update_resolution(resolution);
+        self.started = true;
+    }
+
+    pub fn finish<F: FnOnce(&[Shape], &ShapeBinner)>(&mut self, f: F) {
+        if !self.started {
+            panic!("Painter::finish() called before Painter::start()");
+        }
+
+        self.binner.calculate_shape_ranges();
+        f(&self.shapes, &self.binner);
         self.clear_shapes();
+        self.started = false;
     }
 
     /// Begin a group of shapes. All shapes added while in a group will share the same group ID.

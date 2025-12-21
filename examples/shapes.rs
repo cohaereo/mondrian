@@ -37,6 +37,8 @@ impl ExampleApp {
             None => return,
         };
 
+        self.painter
+            .start((device.surface_config.width, device.surface_config.height));
         self.painter.add_filled_rect(
             [0.0, 0.0],
             [
@@ -203,8 +205,13 @@ impl ExampleApp {
             occlusion_query_set: None,
             timestamp_writes: None,
         });
-        self.painter.finish(|shapes| {
-            renderer.update_shape_buffer(&device.device, &device.queue, shapes);
+        self.painter.finish(|shapes, binner| {
+            renderer.update_shape_buffer(
+                &device.device,
+                &device.queue,
+                shapes,
+                (device.surface_config.width, device.surface_config.height),
+            );
             renderer.render(&mut pass);
         });
 

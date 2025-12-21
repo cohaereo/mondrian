@@ -15,9 +15,13 @@ pub struct Shape {
 }
 
 impl Shape {
+    /// Calculates the axis-aligned bounding box of the shape, taking into account distance offset, line width, etc.
+    ///
+    /// This is a conservative estimate, as it is primarily used for tile binning. As such, it may be (slightly) larger than the actual bounds.
     pub fn bounds(&self) -> BoundingBox {
         let mut bounds = self.primitive.bounds();
         bounds.grow(self.distance_offset);
+        bounds.grow(self.line_width * 0.5);
         bounds
     }
 }

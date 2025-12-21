@@ -1,6 +1,6 @@
-use std::{f32::consts::TAU, ops::Deref};
+use std::ops::Deref;
 
-use glam::{Vec2, vec2};
+use glam::vec2;
 use wgpu::rwh::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::{application::ApplicationHandler, keyboard::KeyCode, window::WindowAttributes};
 
@@ -41,6 +41,9 @@ impl ExampleApp {
             None => return,
         };
 
+        self.painter
+            .start((device.surface_config.width, device.surface_config.height));
+
         for _ in 0..5000 {
             let x = fastrand::f32() * device.surface_config.width as f32;
             let y = fastrand::f32() * device.surface_config.height as f32;
@@ -79,8 +82,13 @@ impl ExampleApp {
             occlusion_query_set: None,
             timestamp_writes: None,
         });
-        self.painter.finish(|shapes| {
-            renderer.update_shape_buffer(&device.device, &device.queue, shapes);
+        self.painter.finish(|shapes, binner| {
+            renderer.update_shape_buffer(
+                &device.device,
+                &device.queue,
+                shapes,
+                (device.surface_config.width, device.surface_config.height),
+            );
             renderer.render(&mut pass);
         });
 
@@ -202,9 +210,10 @@ impl<'a> Device<'a> {
                 })
                 .expect("Failed to create surface")
         };
-        let surface_config = surface
+        let mut surface_config = surface
             .get_default_config(&adapter, window_size.width, window_size.height)
             .expect("Failed to get default surface config");
+        surface_config.present_mode = wgpu::PresentMode::Immediate;
         surface.configure(&device, &surface_config);
 
         Self {

@@ -1,7 +1,12 @@
-use assert_offset::AssertOffsets;
-use glam::Vec4;
+use std::ops::Div;
 
-use crate::Primitive;
+use assert_offset::AssertOffsets;
+use glam::{Vec2, Vec4, uvec2};
+
+use crate::{
+    Primitive, Shape,
+    shape::{self, BoundingBox},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, AssertOffsets, Default, bytemuck::Pod, bytemuck::Zeroable)]

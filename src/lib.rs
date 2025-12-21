@@ -1,4 +1,5 @@
 pub mod backend;
+pub mod binner;
 pub mod painter;
 pub mod shape;
 
