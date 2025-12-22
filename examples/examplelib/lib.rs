@@ -1,3 +1,4 @@
+use mondrian::backend::wgpu::WgpuRenderer;
 use std::ops::Deref;
 
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -20,13 +21,19 @@ pub fn run_example<E: Example + 'static>(present_mode: wgpu::PresentMode, exampl
 
 pub trait Example {
     fn name(&self) -> &str;
-    fn draw(&mut self, painter: &mut mondrian::Painter, resolution: (u32, u32));
+    fn draw(
+        &mut self,
+        painter: &mut mondrian::Painter,
+        dev: &WgpuDevice,
+        renderer: &mut WgpuRenderer,
+        resolution: (u32, u32),
+    );
 }
 
 struct ExampleApp {
     present_mode: wgpu::PresentMode,
     painter: mondrian::Painter,
-    device: Option<Device<'static>>,
+    device: Option<WgpuDevice<'static>>,
     renderer: Option<mondrian::backend::wgpu::WgpuRenderer>,
     example: Box<dyn Example>,
 }
@@ -70,9 +77,10 @@ impl ExampleApp {
 
         let resolution = (device.surface_config.width, device.surface_config.height);
         self.painter.start(resolution);
-        self.example.draw(&mut self.painter, resolution);
+        self.example
+            .draw(&mut self.painter, device, renderer, resolution);
         self.painter.finish(|shapes, binner| {
-            renderer.update_shape_buffer(&device.device, &device.queue, shapes, binner);
+            renderer.prepare(&device.device, &device.queue, shapes, binner);
             renderer.render(&mut pass);
         });
 
@@ -87,14 +95,14 @@ impl ApplicationHandler for ExampleApp {
         let window = event_loop
             .create_window(
                 WindowAttributes::default()
-                    .with_title("Mondrian Shapes Example")
+                    .with_title(self.example.name())
                     .with_inner_size(winit::dpi::Size::Physical(winit::dpi::PhysicalSize::new(
                         1200, 900,
                     ))),
             )
             .expect("Failed to create window");
 
-        let device = pollster::block_on(Device::new(window, self.present_mode));
+        let device = pollster::block_on(WgpuDevice::new(window, self.present_mode));
         let renderer =
             mondrian::backend::wgpu::WgpuRenderer::new(&device, device.surface_config.format);
         self.device = Some(device);
@@ -134,18 +142,18 @@ impl ApplicationHandler for ExampleApp {
     }
 }
 
-struct Device<'a> {
-    _instance: wgpu::Instance,
-    _adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+pub struct WgpuDevice<'a> {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
 
     surface: wgpu::Surface<'a>,
     surface_config: wgpu::SurfaceConfiguration,
     window: winit::window::Window,
 }
 
-impl<'a> Device<'a> {
+impl<'a> WgpuDevice<'a> {
     async fn new(window: winit::window::Window, present_mode: wgpu::PresentMode) -> Self {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
         let adapter = instance
@@ -159,9 +167,12 @@ impl<'a> Device<'a> {
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
-                required_features: wgpu::Features::PUSH_CONSTANTS,
+                required_features: wgpu::Features::PUSH_CONSTANTS
+                    | wgpu::Features::TEXTURE_BINDING_ARRAY
+                    | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING,
                 required_limits: wgpu::Limits {
                     max_push_constant_size: 4,
+                    max_binding_array_elements_per_shader_stage: 1024,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -181,13 +192,13 @@ impl<'a> Device<'a> {
         let mut surface_config = surface
             .get_default_config(&adapter, window_size.width, window_size.height)
             .expect("Failed to get default surface config");
-        surface_config.format = wgpu::TextureFormat::Rgba8Unorm;
+        surface_config.format = wgpu::TextureFormat::Bgra8Unorm;
         surface_config.present_mode = present_mode;
         surface.configure(&device, &surface_config);
 
         Self {
-            _instance: instance,
-            _adapter: adapter,
+            instance,
+            adapter,
             device,
             queue,
 
@@ -198,7 +209,7 @@ impl<'a> Device<'a> {
     }
 }
 
-impl Deref for Device<'_> {
+impl Deref for WgpuDevice<'_> {
     type Target = wgpu::Device;
 
     fn deref(&self) -> &Self::Target {

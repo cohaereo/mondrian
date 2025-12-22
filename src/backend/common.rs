@@ -1,26 +1,30 @@
 use assert_offset::AssertOffsets;
 use glam::Vec4;
 
-use crate::Primitive;
+use crate::{Primitive, Shape, shape::BoundingBox};
 
 #[repr(C)]
 #[derive(Clone, Copy, AssertOffsets, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GpuShape {
     #[offset(0x00)]
-    pub shape_type: u32,
+    pub shape_header: ShapeHeader,
     pub distance_offset: f32,
     pub line_width: f32,
     pub group_id: u32,
 
     #[offset(0x10)]
-    pub color: Vec4,
+    pub bounds: BoundingBox,
+
     #[offset(0x20)]
+    pub color: Vec4,
+
+    #[offset(0x30)]
     pub params: GpuShapeParams,
 }
 
-impl From<&crate::Shape> for GpuShape {
-    fn from(value: &crate::Shape) -> Self {
-        let shape_type = match value.primitive {
+impl GpuShape {
+    pub fn from_shape(shape: &Shape, texture_id: Option<u32>) -> Self {
+        let shape_type = match shape.primitive {
             Primitive::Circle { .. } => 0,
             Primitive::Triangle { .. } => 1,
             Primitive::Rect { .. } => 2,
@@ -29,14 +33,31 @@ impl From<&crate::Shape> for GpuShape {
             Primitive::PolyQuad { .. } => 5,
         };
 
+        let bounds = shape.bounds();
+
         Self {
-            shape_type,
-            distance_offset: value.distance_offset,
-            line_width: value.line_width,
-            group_id: value.group_id,
-            color: value.color,
-            params: GpuShapeParams::from(&value.primitive),
+            shape_header: ShapeHeader::new(shape_type, texture_id),
+            distance_offset: shape.distance_offset,
+            line_width: shape.line_width,
+            group_id: shape.group_id,
+            bounds,
+            color: shape.color,
+            params: GpuShapeParams::from(&shape.primitive),
         }
+    }
+}
+
+#[repr(C)]
+#[derive(Default, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ShapeHeader(u32);
+
+impl ShapeHeader {
+    pub const SENTINEL: Self = ShapeHeader(u32::MAX);
+
+    pub fn new(shape_type: u32, texture_id: Option<u32>) -> Self {
+        let texture_id_bits = texture_id.unwrap_or(u32::MAX) << 8;
+        let shape_type_bits = shape_type & 0xFF;
+        ShapeHeader(texture_id_bits | shape_type_bits)
     }
 }
 

@@ -1,5 +1,9 @@
 use glam::{Vec2, Vec4};
 
+slotmap::new_key_type! {
+    pub struct TextureId;
+}
+
 #[derive(Clone, Debug)]
 pub struct Shape {
     pub primitive: Primitive,
@@ -12,17 +16,46 @@ pub struct Shape {
     pub line_width: f32,
     /// An optional group ID for the shape. SDF shapes with the same group ID are joined together
     pub group_id: u32,
+    /// An optional texture ID for the shape. If set, the shape will be sample from the given texture, using the SDF as a clip mask.
+    /// The shape's color will be multiplied with the texture color.
+    pub texture_id: Option<TextureId>,
 }
 
 impl Shape {
     /// Calculates the axis-aligned bounding box of the shape, taking into account distance offset, line width, etc.
     ///
-    /// This is a conservative estimate, as it is primarily used for tile binning. As such, it may be (slightly) larger than the actual bounds.
+    /// This is a conservative estimate, as it is primarily used for culling and tile binning. As such, it may be (slightly) larger than the actual bounds.
+    pub fn culling_bounds(&self) -> BoundingBox {
+        // cohae: Right now this is the same as bounds(), but in the future, glow/shadows will require culling bounds to be larger than the actual shape bounds.
+        let mut bounds = self.primitive.bounds();
+        bounds.grow(-self.distance_offset);
+        bounds.grow(self.line_width * 0.5);
+        bounds
+    }
+
+    /// Calculates the axis-aligned bounding box of the primitive, without considering distance offset, line width, etc.
+    ///
+    /// This is a tight fit around the primitive and it's outline. This can be used for precise calculations where the exact shape bounds are needed.
     pub fn bounds(&self) -> BoundingBox {
         let mut bounds = self.primitive.bounds();
         bounds.grow(-self.distance_offset);
         bounds.grow(self.line_width * 0.5);
         bounds
+    }
+
+    pub fn with_distance_offset(&mut self, offset: f32) -> &mut Self {
+        self.distance_offset = offset;
+        self
+    }
+
+    pub fn with_line_width(&mut self, line_width: f32) -> &mut Self {
+        self.line_width = line_width;
+        self
+    }
+
+    pub fn with_texture_id(&mut self, texture_id: TextureId) -> &mut Self {
+        self.texture_id = Some(texture_id);
+        self
     }
 }
 
@@ -135,7 +168,8 @@ impl From<[f32; 4]> for CornerRadius {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct BoundingBox {
     pub min: Vec2,
     pub max: Vec2,
@@ -161,5 +195,11 @@ impl BoundingBox {
             min: self.min.min(other.min),
             max: self.max.max(other.max),
         }
+    }
+}
+
+impl Default for BoundingBox {
+    fn default() -> Self {
+        Self::EMPTY
     }
 }

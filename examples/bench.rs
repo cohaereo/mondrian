@@ -1,5 +1,6 @@
-use example_lib::Example;
+use example_lib::{Example, WgpuDevice};
 use glam::vec2;
+use mondrian::backend::wgpu::WgpuRenderer;
 
 fn main() {
     const NUM_FRAMES: usize = 10000;
@@ -22,7 +23,13 @@ impl Example for BenchApp {
         "Mondrian 10k Circles Benchmark"
     }
 
-    fn draw(&mut self, painter: &mut mondrian::Painter, resolution: (u32, u32)) {
+    fn draw(
+        &mut self,
+        painter: &mut mondrian::Painter,
+        _dev: &WgpuDevice,
+        _renderer: &mut WgpuRenderer,
+        resolution: (u32, u32),
+    ) {
         for _ in 0..10000 {
             let x = fastrand::f32() * resolution.0 as f32;
             let y = fastrand::f32() * resolution.1 as f32;

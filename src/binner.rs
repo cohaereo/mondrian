@@ -45,7 +45,7 @@ impl ShapeBinner {
                 let bounds = shapes[group_start_index..=i]
                     .iter()
                     .fold(None, |acc: Option<BoundingBox>, s| {
-                        let shape_bounds = s.bounds();
+                        let shape_bounds = s.culling_bounds();
                         Some(if let Some(acc_bounds) = acc {
                             BoundingBox {
                                 min: acc_bounds.min.min(shape_bounds.min),

@@ -7,6 +7,7 @@ edition = "2024"
 assert-offset = "0.1.2"
 bytemuck = { version = "1.24.0", features = ["derive"] }
 glam = { version = "0.30.9", features = ["bytemuck"] }
+slotmap = "1.1.1"
 wgpu = "27.0.1"
 
 [dev-dependencies]

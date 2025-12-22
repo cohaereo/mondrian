@@ -1,14 +1,15 @@
 use std::f32::consts::TAU;
 
-use example_lib::Example;
+use example_lib::{Example, WgpuDevice};
 use glam::{Vec2, vec2, vec3};
+use mondrian::backend::wgpu::WgpuRenderer;
 
 fn main() {
     let app = ExampleApp {
         start_time: std::time::Instant::now(),
     };
 
-    example_lib::run_example(wgpu::PresentMode::Mailbox, app)
+    example_lib::run_example(wgpu::PresentMode::Fifo, app)
 }
 
 struct ExampleApp {
@@ -20,7 +21,13 @@ impl Example for ExampleApp {
         "Mondrian Shapes Example"
     }
 
-    fn draw(&mut self, painter: &mut mondrian::Painter, resolution: (u32, u32)) {
+    fn draw(
+        &mut self,
+        painter: &mut mondrian::Painter,
+        _dev: &WgpuDevice,
+        _renderer: &mut WgpuRenderer,
+        resolution: (u32, u32),
+    ) {
         let time = self.start_time.elapsed().as_secs_f32();
 
         painter.add_filled_rect(

@@ -808,6 +808,7 @@ dependencies = [
  "example_lib",
  "fastrand",
  "glam",
+ "slotmap",
  "wgpu",
 ]
 

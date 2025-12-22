@@ -1,24 +1,44 @@
+const SHAPE_TYPE_MASK: u32 = 0xFFu;
+const SHAPE_TYPE_SHIFT: u32 = 0u;
+const SHAPE_TEXTURE_ID_MASK: u32 = 0xFFFFFF00u;
+const SHAPE_TEXTURE_ID_SHIFT: u32 = 8u;
+
 const SHAPE_TYPE_SPHERE: u32 = 0;
 const SHAPE_TYPE_TRIANGLE: u32 = 1;
 const SHAPE_TYPE_RECT: u32 = 2;
 const SHAPE_TYPE_LINE: u32 = 3;
 const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
-const SHAPE_TYPE_SENTINEL: u32 = 0xFFFFFFFF;
+const SHAPE_TYPE_SENTINEL: u32 = 0xFF;
 
 const TILE_SIZE: f32 = 32.0;
 
 const ANTI_ALIASING: bool = true;
 
 struct Shape {
-    shape_type: u32,
+    shape_header: u32,
     distance_offset: f32,
     line_width: f32,
     group_id: u32,
 
+    bounds_min: vec2<f32>,
+    bounds_max: vec2<f32>,
+
     color: vec4<f32>,
 
     params: array<f32, 8>,
+}
+
+fn shape_type(shape: Shape) -> u32 {
+    return (shape.shape_header & SHAPE_TYPE_MASK) >> SHAPE_TYPE_SHIFT;
+}
+
+fn shape_texture_id(shape: Shape) -> u32 {
+    return (shape.shape_header & SHAPE_TEXTURE_ID_MASK) >> SHAPE_TEXTURE_ID_SHIFT;
+}
+
+fn shape_has_texture(shape: Shape) -> bool {
+    return (shape.shape_header & SHAPE_TEXTURE_ID_MASK) != SHAPE_TEXTURE_ID_MASK;
 }
 
 @group(0) @binding(0)
@@ -29,6 +49,12 @@ var<storage, read> shape_ranges: array<u32>;
 
 @group(0) @binding(2)
 var<storage, read> shape_indices: array<u32>;
+
+@group(1) @binding(0)
+var shape_textures: binding_array<texture_2d<f32>>;
+
+@group(1) @binding(1)
+var texture_sampler: sampler;
 
 var<push_constant> screen_width_tiles: u32;
 
@@ -53,11 +79,14 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
 
     var color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 1.0);
     var group_dist = 0.0;
+    var group_bounds_min: vec2<f32> = vec2<f32>(1e6, 1e6);
+    var group_bounds_max: vec2<f32> = vec2<f32>(-1e6, -1e6);
+
     var last_group_id: u32 = 0xFFFFFFFF;
     for(var i: u32 = shape_start; i < shape_end; i = i + 1u) {
         let shape_index = shape_indices[i];
         let shape = shapes[shape_index];
-        if(shape.shape_type == SHAPE_TYPE_SENTINEL) {
+        if(shape_type(shape) == SHAPE_TYPE_SENTINEL) {
             break;
         }
         var next_group_id: u32 = 0xFFFFFFFF;
@@ -67,12 +96,16 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
 
         if(shape.group_id != last_group_id) {
             group_dist = 1e6; // Reset distance for new group
+            group_bounds_min = vec2<f32>(1e6, 1e6);
+            group_bounds_max = vec2<f32>(-1e6, -1e6);
         }
 
         let frag_pos: vec2<f32> = floor(frag_coord.xy);
         var shape_dist = sd_shape(frag_pos, shape);
         shape_dist += shape.distance_offset;
         group_dist = sd_union(group_dist, shape_dist);
+        group_bounds_min = min(group_bounds_min, shape.bounds_min);
+        group_bounds_max = max(group_bounds_max, shape.bounds_max);
 
         if(next_group_id != shape.group_id) {
             var dist = group_dist;
@@ -80,11 +113,20 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
                 dist = sd_outline(dist, shape.line_width / 2.0);
             }
 
+            var shape_color = shape.color;
+            let texture_id = shape_texture_id(shape);
+            if shape_has_texture(shape) {
+                var uv = (frag_pos - group_bounds_min) / (group_bounds_max - group_bounds_min);
+                let texture = shape_textures[texture_id];
+                let tex_color = textureSample(texture, texture_sampler, uv);
+                shape_color = shape_color * tex_color;
+            }
+
             if ANTI_ALIASING {
-                color = mix(color, shape.color, clamp(1 - dist, 0.0, 1.0) * shape.color.a);
+                color = mix(color, shape_color, clamp(1 - dist, 0.0, 1.0) * shape_color.a);
             } else {
                 if(dist < 0.5) {
-                    color = shape.color;
+                    color = shape_color;
                 }
             }
         }
@@ -95,7 +137,7 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
 }
 
 fn sd_shape(p: vec2<f32>, shape: Shape) -> f32 {
-    switch(shape.shape_type) {
+    switch(shape_type(shape)) {
         case SHAPE_TYPE_SPHERE: {
             let pos = vec2<f32>(shape.params[0], shape.params[1]);
             let radius = shape.params[2];
