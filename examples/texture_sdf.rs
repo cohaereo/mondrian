@@ -68,7 +68,7 @@ impl Example for ExampleApp {
             .with_texture_is_mtsdf();
 
         painter
-            .add_filled_rect_center_size([1270.0, 200.0], [6.0, 6.0], 0.0, [1.0, 1.0, 1.0, 1.0])
+            .add_filled_rect_center_size([1270.0, 200.0], [8.0, 8.0], 0.0, [1.0, 1.0, 1.0, 1.0])
             .with_texture_id(self.texture_mtsdf)
             .with_texture_is_mtsdf();
 
@@ -103,7 +103,7 @@ impl Example for ExampleApp {
             .with_texture_is_sdf();
 
         painter
-            .add_filled_rect_center_size([1270.0, 600.0], [6.0, 6.0], 0.0, [1.0, 1.0, 1.0, 1.0])
+            .add_filled_rect_center_size([1270.0, 600.0], [8.0, 8.0], 0.0, [1.0, 1.0, 1.0, 1.0])
             .with_texture_id(self.texture_sdf)
             .with_texture_is_sdf();
     }

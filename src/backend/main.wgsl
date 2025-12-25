@@ -16,8 +16,8 @@ const FLAG_TEXTURE_IS_MTSDF: u32 = 0x2u;
 
 const TILE_SIZE: f32 = 32.0;
 
-const SDF_TEXTURE_RANGE: f32 = 2.0;
-const SDF_TEXTURE_SIZE: f32 = 16.0;
+const SDF_TEXTURE_RANGE: f32 = 4.0;
+const SDF_TEXTURE_SIZE: f32 = 32.0;
 
 const ANTI_ALIASING: bool = true;
 
@@ -145,34 +145,37 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
         group_bounds_max = max(group_bounds_max, shape.bounds_max);
 
         if(next_group_id != shape_group_id(shape)) {
-            var dist = group_dist;
+            var dist_hard = group_dist;
             if(shape.line_width > 0.0) {
-                dist = sd_outline(dist, shape.line_width / 2.0);
+                dist_hard = sd_outline(dist_hard, shape.line_width / 2.0);
             }
 
             var shape_color = shape.color;
             let texture_id = shape_texture_id(shape);
+            var dist_soft = dist_hard;
             if shape_has_texture(shape) {
                 var uv = (frag_pos - group_bounds_min) / (group_bounds_max - group_bounds_min);
                 let texture = shape_textures[texture_id];
                 let tex_color = textureSample(texture, texture_sampler, uv);
                 if shape_texture_is_mtsdf(shape) {
-                    let sd_r = tex_color.x;
-                    let sd_g = tex_color.y;
-                    let sd_b = tex_color.z;
-                    let sd_median = median(sd_r, sd_g, sd_b);
-                    dist = -(screen_px_range(group_bounds_min, group_bounds_max) * (sd_median - 0.5)) + 0.5;
+                    var msdf = median(tex_color.r, tex_color.g, tex_color.b);
+                    let sdf = tex_color.a;
+
+                    dist_hard = -(screen_px_range(group_bounds_min, group_bounds_max) * (msdf - 0.5)) + 0.5;
+                    dist_soft = -(SDF_TEXTURE_SIZE * (tex_color.a - 0.5)) + 0.5;
                 } else if shape_texture_is_sdf(shape) {
-                    dist = -(screen_px_range(group_bounds_min, group_bounds_max) * (tex_color.x - 0.5)) + 0.5;
+                    dist_hard = -(screen_px_range(group_bounds_min, group_bounds_max) * (tex_color.x - 0.5)) + 0.5;
+                    dist_soft = -(SDF_TEXTURE_SIZE * (tex_color.x - 0.5));
                 } else {
                     shape_color = shape_color * tex_color;
                 }
             }
 
-            if shape.glow.a != 0.0 && dist >= 0.0 {
+
+            if shape.glow.a != 0.0 {
                 let glow_dist = abs(shape.glow.a);
                 let glow_color = shape.glow.rgb;
-                let glow_strength = clamp(1.0 - (dist / glow_dist), 0.0, 1.0);
+                let glow_strength = clamp(1.0 - (dist_soft / glow_dist), 0.0, 1.0);
                 if shape.glow.a < 0.0 {
                     let opacity = shape.glow.r;
                     color = mix(color, vec4<f32>(0.0, 0.0, 0.0, 1.0), glow_strength * opacity);
@@ -183,9 +186,9 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
             }
 
             if ANTI_ALIASING {
-                color = mix(color, shape_color, clamp(1 - dist, 0.0, 1.0) * shape_color.a);
+                color = mix(color, shape_color, clamp(1 - dist_hard, 0.0, 1.0) * shape_color.a);
             } else {
-                if(dist < 0.5) {
+                if(dist_hard < 0.5) {
                     color = shape_color;
                 }
             }
