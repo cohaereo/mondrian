@@ -1,7 +1,5 @@
-use std::f32::consts::TAU;
-
 use example_lib::{Example, WgpuDevice};
-use glam::{Vec2, vec2, vec3};
+use glam::vec3;
 use mondrian::backend::wgpu::WgpuRenderer;
 
 fn main() {

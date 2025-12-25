@@ -1,7 +1,6 @@
-use example_lib::{Example, WgpuDevice};
+use example_lib::{Example, WgpuDevice, load_rgba_texture};
 use mondrian::{backend::wgpu::WgpuRenderer, shape::TextureId};
 use slotmap::Key;
-use wgpu::util::DeviceExt;
 
 fn main() {
     let app = ExampleApp {
@@ -15,47 +14,6 @@ fn main() {
 struct ExampleApp {
     texture_mtsdf: TextureId,
     texture_sdf: TextureId,
-}
-
-impl ExampleApp {
-    fn create_texture(
-        &mut self,
-        dev: &WgpuDevice,
-        renderer: &mut WgpuRenderer,
-        data: &[u8],
-    ) -> TextureId {
-        assert_eq!(
-            &data[..4],
-            b"RGBA",
-            "Texture data must start with 'RGBA' header"
-        );
-        let size = (
-            u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
-            u32::from_be_bytes([data[8], data[9], data[10], data[11]]),
-        );
-
-        let tex = dev.create_texture_with_data(
-            &dev.queue,
-            &wgpu::wgt::TextureDescriptor {
-                label: Some("Example Texture"),
-                size: wgpu::Extent3d {
-                    width: size.0,
-                    height: size.1,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            },
-            wgpu::wgt::TextureDataOrder::MipMajor,
-            data[12..].as_ref(),
-        );
-
-        renderer.register_texture(tex.create_view(&wgpu::TextureViewDescriptor::default()))
-    }
 }
 
 impl Example for ExampleApp {
@@ -72,11 +30,11 @@ impl Example for ExampleApp {
     ) {
         if self.texture_mtsdf.is_null() {
             self.texture_mtsdf =
-                self.create_texture(dev, renderer, include_bytes!("textures/mtsdf.rgba"));
+                load_rgba_texture(dev, renderer, include_bytes!("textures/mtsdf.rgba"));
         }
         if self.texture_sdf.is_null() {
             self.texture_sdf =
-                self.create_texture(dev, renderer, include_bytes!("textures/sdf.rgba"));
+                load_rgba_texture(dev, renderer, include_bytes!("textures/sdf.rgba"));
         }
 
         // MTSDF

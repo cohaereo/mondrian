@@ -1,9 +1,8 @@
 use std::f32::consts::TAU;
 
-use example_lib::{Example, WgpuDevice};
+use example_lib::{Example, WgpuDevice, load_rgba_texture};
 use mondrian::{backend::wgpu::WgpuRenderer, shape::TextureId};
 use slotmap::Key;
-use wgpu::util::DeviceExt;
 
 fn main() {
     let app = ExampleApp {
@@ -21,38 +20,6 @@ struct ExampleApp {
     texture_id2: TextureId,
 }
 
-impl ExampleApp {
-    fn create_texture(
-        &mut self,
-        dev: &WgpuDevice,
-        renderer: &mut WgpuRenderer,
-        data: &[u8],
-        size: (u32, u32),
-    ) -> TextureId {
-        let tex = dev.create_texture_with_data(
-            &dev.queue,
-            &wgpu::wgt::TextureDescriptor {
-                label: Some("Example Texture"),
-                size: wgpu::Extent3d {
-                    width: size.0,
-                    height: size.1,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            },
-            wgpu::wgt::TextureDataOrder::MipMajor,
-            data,
-        );
-
-        renderer.register_texture(tex.create_view(&wgpu::TextureViewDescriptor::default()))
-    }
-}
-
 impl Example for ExampleApp {
     fn name(&self) -> &str {
         "Mondrian Texture Example"
@@ -66,20 +33,12 @@ impl Example for ExampleApp {
         _resolution: (u32, u32),
     ) {
         if self.texture_id1.is_null() {
-            self.texture_id1 = self.create_texture(
-                dev,
-                renderer,
-                include_bytes!("textures/painting.data"),
-                (512, 512),
-            );
+            self.texture_id1 =
+                load_rgba_texture(dev, renderer, include_bytes!("textures/painting.rgba"));
         }
         if self.texture_id2.is_null() {
-            self.texture_id2 = self.create_texture(
-                dev,
-                renderer,
-                include_bytes!("textures/mondrian.data"),
-                (256, 256),
-            );
+            self.texture_id2 =
+                load_rgba_texture(dev, renderer, include_bytes!("textures/mondrian.rgba"));
         }
         let time = self.start_time.elapsed().as_secs_f32();
 
