@@ -66,12 +66,20 @@ impl Example for ExampleApp {
         _resolution: (u32, u32),
     ) {
         if self.texture_id1.is_null() {
-            self.texture_id1 =
-                self.create_texture(dev, renderer, include_bytes!("image.data"), (512, 512));
+            self.texture_id1 = self.create_texture(
+                dev,
+                renderer,
+                include_bytes!("textures/painting.data"),
+                (512, 512),
+            );
         }
         if self.texture_id2.is_null() {
-            self.texture_id2 =
-                self.create_texture(dev, renderer, include_bytes!("mondrian.data"), (256, 256));
+            self.texture_id2 = self.create_texture(
+                dev,
+                renderer,
+                include_bytes!("textures/mondrian.data"),
+                (256, 256),
+            );
         }
         let time = self.start_time.elapsed().as_secs_f32();
 

@@ -1,16 +1,19 @@
 use assert_offset::AssertOffsets;
 use glam::Vec4;
 
-use crate::{Primitive, Shape, shape::BoundingBox};
+use crate::{
+    Primitive, Shape,
+    shape::{BoundingBox, ShapeFlags},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, AssertOffsets, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GpuShape {
     #[offset(0x00)]
-    pub shape_header: ShapeHeader,
+    pub header: ShapeHeader,
     pub distance_offset: f32,
     pub line_width: f32,
-    pub group_id: u32,
+    pub flags: GpuShapeFlags,
 
     #[offset(0x10)]
     pub bounds: BoundingBox,
@@ -36,10 +39,10 @@ impl GpuShape {
         let bounds = shape.bounds();
 
         Self {
-            shape_header: ShapeHeader::new(shape_type, texture_id),
+            header: ShapeHeader::new(shape_type, texture_id),
             distance_offset: shape.distance_offset,
             line_width: shape.line_width,
-            group_id: shape.group_id,
+            flags: GpuShapeFlags::new(shape.flags, shape.group_id),
             bounds,
             color: shape.color,
             params: GpuShapeParams::from(&shape.primitive),
@@ -58,6 +61,18 @@ impl ShapeHeader {
         let texture_id_bits = texture_id.unwrap_or(u32::MAX) << 8;
         let shape_type_bits = shape_type & 0xFF;
         ShapeHeader(texture_id_bits | shape_type_bits)
+    }
+}
+
+#[repr(C)]
+#[derive(Default, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct GpuShapeFlags(u32);
+
+impl GpuShapeFlags {
+    pub fn new(flags: ShapeFlags, group_id: u32) -> Self {
+        let flags_bits = (flags.bits() as u32) << 24;
+        let group_id_bits = group_id & 0x00FF_FFFF;
+        GpuShapeFlags(flags_bits | group_id_bits)
     }
 }
 

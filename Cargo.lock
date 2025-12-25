@@ -804,6 +804,7 @@ name = "mondrian"
 version = "0.1.0"
 dependencies = [
  "assert-offset",
+ "bitflags 2.10.0",
  "bytemuck",
  "example_lib",
  "fastrand",

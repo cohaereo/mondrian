@@ -11,15 +11,22 @@ const SHAPE_TYPE_CIRCLE_SECTOR: u32 = 4;
 const SHAPE_TYPE_POLYQUAD: u32 = 5;
 const SHAPE_TYPE_SENTINEL: u32 = 0xFF;
 
+const FLAG_TEXTURE_IS_SDF: u32 = 0x1u;
+const FLAG_TEXTURE_IS_MTSDF: u32 = 0x2u;
+
 const TILE_SIZE: f32 = 32.0;
+
+const SDF_TEXTURE_RANGE: f32 = 2.0;
+const SDF_TEXTURE_SIZE: f32 = 16.0;
 
 const ANTI_ALIASING: bool = true;
 
 struct Shape {
-    shape_header: u32,
+    header: u32,
     distance_offset: f32,
     line_width: f32,
-    group_id: u32,
+
+    flags: u32,
 
     bounds_min: vec2<f32>,
     bounds_max: vec2<f32>,
@@ -30,15 +37,40 @@ struct Shape {
 }
 
 fn shape_type(shape: Shape) -> u32 {
-    return (shape.shape_header & SHAPE_TYPE_MASK) >> SHAPE_TYPE_SHIFT;
+    return (shape.header & SHAPE_TYPE_MASK) >> SHAPE_TYPE_SHIFT;
 }
 
 fn shape_texture_id(shape: Shape) -> u32 {
-    return (shape.shape_header & SHAPE_TEXTURE_ID_MASK) >> SHAPE_TEXTURE_ID_SHIFT;
+    return (shape.header & SHAPE_TEXTURE_ID_MASK) >> SHAPE_TEXTURE_ID_SHIFT;
 }
 
 fn shape_has_texture(shape: Shape) -> bool {
-    return (shape.shape_header & SHAPE_TEXTURE_ID_MASK) != SHAPE_TEXTURE_ID_MASK;
+    return (shape.header & SHAPE_TEXTURE_ID_MASK) != SHAPE_TEXTURE_ID_MASK;
+}
+
+fn screen_px_range(bounds_min: vec2<f32>, bounds_max: vec2<f32>) -> f32 {
+    let shape_width = bounds_max.x - bounds_min.x;
+    return (shape_width / SDF_TEXTURE_SIZE) * SDF_TEXTURE_RANGE;
+}
+
+fn shape_group_id(shape: Shape) -> u32 {
+    return shape.flags & 0x00FFFFFFu;
+}
+
+fn shape_texture_flags(shape: Shape) -> u32 {
+    return (shape.flags & 0xFF000000u) >> 24u;
+}
+
+fn shape_texture_is_sdf(shape: Shape) -> bool {
+    return (shape_texture_flags(shape) & FLAG_TEXTURE_IS_SDF) != 0u;
+}
+
+fn shape_texture_is_mtsdf(shape: Shape) -> bool {
+    return (shape_texture_flags(shape) & FLAG_TEXTURE_IS_MTSDF) != 0u;
+}
+
+fn median(r: f32, g: f32, b: f32) -> f32 {
+    return max(min(r, g), min(max(r, g), b));
 }
 
 @group(0) @binding(0)
@@ -56,7 +88,11 @@ var shape_textures: binding_array<texture_2d<f32>>;
 @group(1) @binding(1)
 var texture_sampler: sampler;
 
-var<push_constant> screen_width_tiles: u32;
+struct ScreenConstants {
+    width_tiles: u32,
+};
+
+var<push_constant> screen: ScreenConstants;
 
 @vertex
 fn main_vs(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<f32> {
@@ -73,7 +109,7 @@ fn main_vs(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<
 fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
     let tile_x = u32(frag_coord.x / TILE_SIZE);
     let tile_y = u32(frag_coord.y / TILE_SIZE);
-    let tile_index = tile_y * screen_width_tiles + tile_x;
+    let tile_index = tile_y * screen.width_tiles + tile_x;
     let shape_start = shape_ranges[tile_index];
     let shape_end = shape_ranges[tile_index + 1u];
 
@@ -91,10 +127,10 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
         }
         var next_group_id: u32 = 0xFFFFFFFF;
         if(i + 1u < shape_end) {
-            next_group_id = shapes[shape_indices[i + 1u]].group_id;
+            next_group_id = shape_group_id(shapes[shape_indices[i + 1u]]);
         }
 
-        if(shape.group_id != last_group_id) {
+        if(shape_group_id(shape) != last_group_id) {
             group_dist = 1e6; // Reset distance for new group
             group_bounds_min = vec2<f32>(1e6, 1e6);
             group_bounds_max = vec2<f32>(-1e6, -1e6);
@@ -107,7 +143,7 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
         group_bounds_min = min(group_bounds_min, shape.bounds_min);
         group_bounds_max = max(group_bounds_max, shape.bounds_max);
 
-        if(next_group_id != shape.group_id) {
+        if(next_group_id != shape_group_id(shape)) {
             var dist = group_dist;
             if(shape.line_width > 0.0) {
                 dist = sd_outline(dist, shape.line_width / 2.0);
@@ -119,7 +155,17 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
                 var uv = (frag_pos - group_bounds_min) / (group_bounds_max - group_bounds_min);
                 let texture = shape_textures[texture_id];
                 let tex_color = textureSample(texture, texture_sampler, uv);
-                shape_color = shape_color * tex_color;
+                if shape_texture_is_mtsdf(shape) {
+                    let sd_r = tex_color.x;
+                    let sd_g = tex_color.y;
+                    let sd_b = tex_color.z;
+                    let sd_median = median(sd_r, sd_g, sd_b);
+                    dist = -(screen_px_range(group_bounds_min, group_bounds_max) * (sd_median - 0.5)) + 0.5;
+                } else if shape_texture_is_sdf(shape) {
+                    dist = -(screen_px_range(group_bounds_min, group_bounds_max) * (tex_color.x - 0.5)) + 0.5;
+                } else {
+                    shape_color = shape_color * tex_color;
+                }
             }
 
             if ANTI_ALIASING {
@@ -130,7 +176,7 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
                 }
             }
         }
-        last_group_id = shape.group_id;
+        last_group_id = shape_group_id(shape);
     }
 
     return color;

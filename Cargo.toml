@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 assert-offset = "0.1.2"
+bitflags = "2.10.0"
 bytemuck = { version = "1.24.0", features = ["derive"] }
 glam = { version = "0.30.9", features = ["bytemuck"] }
 slotmap = "1.1.1"

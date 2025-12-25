@@ -99,6 +99,7 @@ impl Painter {
             line_width: 0.0,
             group_id: 0,
             texture_id: None,
+            flags: Default::default(),
         };
         self.add_shape(shape)
     }
@@ -161,6 +162,7 @@ impl Painter {
     ) -> &mut Shape {
         let min = min.into();
         let max = max.into();
+        assert!(min.x <= max.x && min.y <= max.y, "Invalid rectangle bounds");
         let center = (min + max) * 0.5;
         let half_extents = (max - min) * 0.5;
         let corner_radius = corner_radius.into();

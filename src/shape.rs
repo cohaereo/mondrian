@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use glam::{Vec2, Vec4};
 
 slotmap::new_key_type! {
@@ -19,6 +20,7 @@ pub struct Shape {
     /// An optional texture ID for the shape. If set, the shape will be sample from the given texture, using the SDF as a clip mask.
     /// The shape's color will be multiplied with the texture color.
     pub texture_id: Option<TextureId>,
+    pub flags: ShapeFlags,
 }
 
 impl Shape {
@@ -55,6 +57,21 @@ impl Shape {
 
     pub fn with_texture_id(&mut self, texture_id: TextureId) -> &mut Self {
         self.texture_id = Some(texture_id);
+        self
+    }
+
+    pub fn with_flags(&mut self, flags: ShapeFlags) -> &mut Self {
+        self.flags = flags;
+        self
+    }
+
+    pub fn with_texture_is_sdf(&mut self) -> &mut Self {
+        self.flags.insert(ShapeFlags::TEXTURE_SDF);
+        self
+    }
+
+    pub fn with_texture_is_mtsdf(&mut self) -> &mut Self {
+        self.flags.insert(ShapeFlags::TEXTURE_MTSDF);
         self
     }
 }
@@ -201,5 +218,13 @@ impl BoundingBox {
 impl Default for BoundingBox {
     fn default() -> Self {
         Self::EMPTY
+    }
+}
+
+bitflags! {
+    #[derive(Default, Clone, Copy, Debug)]
+    pub struct ShapeFlags: u8 {
+        const TEXTURE_SDF = 1 << 0;
+        const TEXTURE_MTSDF = 1 << 1;
     }
 }

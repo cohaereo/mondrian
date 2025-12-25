@@ -314,8 +314,7 @@ impl WgpuRenderer {
             gpu_shapes.resize(
                 self.shape_buffer_size,
                 GpuShape {
-                    shape_header: ShapeHeader::SENTINEL,
-                    group_id: u32::MAX,
+                    header: ShapeHeader::SENTINEL,
                     ..Default::default()
                 },
             );
