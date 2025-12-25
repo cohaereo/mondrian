@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use glam::{Vec2, Vec4};
+use glam::{Vec2, Vec3, Vec4};
 
 slotmap::new_key_type! {
     pub struct TextureId;
@@ -9,6 +9,7 @@ slotmap::new_key_type! {
 pub struct Shape {
     pub primitive: Primitive,
     pub color: Vec4,
+    pub glow: Vec4,
     /// A value added to the distance field before rendering. Negative values
     /// will make the shape appear larger, positive values will make it appear smaller.
     pub distance_offset: f32,
@@ -32,6 +33,7 @@ impl Shape {
         let mut bounds = self.primitive.bounds();
         bounds.grow(-self.distance_offset);
         bounds.grow(self.line_width * 0.5);
+        bounds.grow(self.glow.w.abs());
         bounds
     }
 
@@ -72,6 +74,16 @@ impl Shape {
 
     pub fn with_texture_is_mtsdf(&mut self) -> &mut Self {
         self.flags.insert(ShapeFlags::TEXTURE_MTSDF);
+        self
+    }
+
+    pub fn with_glow(&mut self, color: Vec3, size: f32) -> &mut Self {
+        self.glow = Vec4::new(color.x, color.y, color.z, size);
+        self
+    }
+
+    pub fn with_shadow(&mut self, opacity: f32, size: f32) -> &mut Self {
+        self.glow = Vec4::new(opacity, opacity, opacity, -size);
         self
     }
 }

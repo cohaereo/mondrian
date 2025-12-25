@@ -32,6 +32,7 @@ struct Shape {
     bounds_max: vec2<f32>,
 
     color: vec4<f32>,
+    glow: vec4<f32>,
 
     params: array<f32, 8>,
 }
@@ -165,6 +166,19 @@ fn main_fs(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4<f32> {
                     dist = -(screen_px_range(group_bounds_min, group_bounds_max) * (tex_color.x - 0.5)) + 0.5;
                 } else {
                     shape_color = shape_color * tex_color;
+                }
+            }
+
+            if shape.glow.a != 0.0 && dist >= 0.0 {
+                let glow_dist = abs(shape.glow.a);
+                let glow_color = shape.glow.rgb;
+                let glow_strength = clamp(1.0 - (dist / glow_dist), 0.0, 1.0);
+                if shape.glow.a < 0.0 {
+                    let opacity = shape.glow.r;
+                    color = mix(color, vec4<f32>(0.0, 0.0, 0.0, 1.0), glow_strength * opacity);
+                } else {
+                    let opacity = length(glow_color);
+                    color = mix(color, vec4(normalize(glow_color), 1.0), glow_strength * opacity);
                 }
             }
 

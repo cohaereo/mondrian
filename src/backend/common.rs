@@ -22,6 +22,9 @@ pub struct GpuShape {
     pub color: Vec4,
 
     #[offset(0x30)]
+    pub glow: Vec4,
+
+    #[offset(0x40)]
     pub params: GpuShapeParams,
 }
 
@@ -45,6 +48,7 @@ impl GpuShape {
             flags: GpuShapeFlags::new(shape.flags, shape.group_id),
             bounds,
             color: shape.color,
+            glow: shape.glow,
             params: GpuShapeParams::from(&shape.primitive),
         }
     }

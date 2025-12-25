@@ -100,6 +100,7 @@ impl Painter {
             group_id: 0,
             texture_id: None,
             flags: Default::default(),
+            glow: Vec4::ZERO,
         };
         self.add_shape(shape)
     }
